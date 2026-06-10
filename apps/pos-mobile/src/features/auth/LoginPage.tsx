@@ -76,10 +76,9 @@ export default function LoginPage() {
       {/* ── Header: logo + marca ── */}
       <div className="mlp-header">
         <div className="mlp-logo-ring">
-          <img src="/logo.jpeg" alt="Caligua BBQ & Grill" className="mlp-logo" />
+          <img src="/logo.jpeg" alt="Tecpancito" className="mlp-logo" />
         </div>
-        <p className="mlp-brand-name">Caligua</p>
-        <p className="mlp-brand-sub">BBQ &amp; Grill</p>
+        <p className="mlp-brand-name">Tecpancito</p>
       </div>
 
       {/* ── Formulario ── */}
