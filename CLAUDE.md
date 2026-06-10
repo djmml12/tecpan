@@ -21,7 +21,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Sin preámbulos ni cierres ("Claro, haré...", "¡Listo!", "Espero que esto ayude").
 - Sin explicaciones de decisiones obvias.
 - Sin listas de lo que se cambió después de editar.
-- Usa `@docs/` para contexto adicional en lugar de incluirlo aquí.
 - Si algo se puede inferir del código, no lo repitas en texto.
 
 ## Cuándo sí comunicarte
@@ -36,8 +35,14 @@ En esos casos: pregunta en una línea, con las opciones concretas si aplica.
 ## Comandos de desarrollo
 
 ```bash
-# Raíz (levanta backend + frontend en paralelo con concurrently)
+# Raíz (levanta backend + ambos frontends en paralelo)
 npm run dev
+
+# Solo backend + tablet
+npm run dev:tablet
+
+# Solo backend + mobile
+npm run dev:mobile
 
 # Backend (desde apps/backend/)
 npm run dev              # nodemon src/server.js (puerto 3000)
@@ -45,89 +50,85 @@ npm start                # node src/server.js
 npm run init-db          # Inicializar base de datos SQLite
 npm run create-admin     # Crear usuario administrador
 
-# Frontend (desde apps/pos-tablet/)
+# Frontend tablet (desde apps/pos-tablet/)
 npm run dev              # Vite dev server (0.0.0.0:5173, proxy /api → :3000)
 npm run build            # tsc -b && vite build
 npm run preview          # Vite preview (:4173)
+
+# Frontend mobile (desde apps/pos-mobile/)
+npm run dev              # Vite dev server (0.0.0.0:5174, proxy /api → :3000)
+npm run build            # tsc -b && vite build
+npm run preview          # Vite preview (:4174)
 
 # Electron shell (desde apps/shell/)
 npm run dev              # Espera al frontend y lanza Electron
 npm run bundle:backend   # Empaqueta backend en .bundle/
 npm run dist             # electron-builder → NSIS installer en dist-electron/
+
+# Distribuir (Windows)
+npm run build:installer  # scripts/build-installer.ps1
 ```
 
-Para desarrollo local: levantar backend (`apps/backend/npm run dev`) y frontend (`apps/pos-tablet/npm run dev`) en paralelo. Vite proxea `/api` al backend.
-
-**Distribución (Windows):** usar `apps/shell/build-installer.ps1`. Requiere **Node 22 LTS** — Node 25+ rompe la compilación nativa de better-sqlite3 en Windows.
+**Requiere Node 22 LTS** para distribución — Node 25+ rompe la compilación nativa de better-sqlite3.
 
 ## Arquitectura
 
-Monorepo con tres apps y cuatro paquetes compartidos. Usa workspaces de npm (`package.json` raíz: `apps/*`, `packages/*`); además los paquetes se resuelven en el frontend vía alias de Vite y paths de TypeScript.
+Monorepo con **cuatro apps** y **cinco paquetes** compartidos. Workspaces npm (`apps/*`, `packages/*`). Los paquetes se resuelven en los frontends vía alias de Vite y paths de TypeScript.
 
 ### Apps
 
-- **`apps/backend`** — API REST con Express + better-sqlite3. ES modules. Patrón routes → controllers → services → models. Base de datos SQLite en `data/fenix.sqlite`. Esquema definido en `src/config/db.init.js`. Autenticación JWT (middleware en `src/middlewares/auth.middleware.js`), RBAC por roles (admin/supervisor/cashier) en `role.middleware.js`.
-- **`apps/pos-tablet`** — SPA React 19 + TypeScript + Vite. Sin router de terceros: `App.tsx` alterna entre modos (pos / admin / logout-summary) según estado de auth. Toda la lógica del POS (carrito, catálogo, tickets, cobro, impresión) vive monolíticamente en `features/pos/PosScreen.tsx` con estado local (`useState`). Diseñada para tablets táctiles (teclado virtual, orientación portrait, pull-to-refresh). El modo `admin` tiene 11 sub-vistas controladas por `AdminLayout.tsx`: `inventory`, `bodega`, `dashboard`, `staff`, `tips`, `printer`, `email`, `keyboard`, `order-naming`, `report-inventory`, `report-bodega`.
-- **`apps/shell`** — Electron 31 (CommonJS). Lanza el backend embebido con detección dinámica de puerto, sirve el frontend producción desde `resources/frontend/`. Flujo de primer uso con `setup.html` para crear/importar DB y admin. IPC bridge via `preload.js` (`window.electronAPI`, `window.setupAPI`).
+- **`apps/backend`** — API REST Express + better-sqlite3. ES modules. Patrón routes → controllers → services → (models para categories/products/users, DB directa para el resto). Base de datos SQLite en `data/fenix.sqlite`. JWT + RBAC por roles (admin/supervisor/cajero/mesero). Rutas registradas con `lazyRoute()` en `src/app.js`.
+
+- **`apps/pos-tablet`** — SPA React 19 + TypeScript + Vite. Puerto 5173. Sin router de terceros: `App.tsx` alterna entre modos (`pos` / `admin` / `logout-summary`) según auth. Diseñada para tablet en portrait con teclado virtual. La lógica del POS vive en `features/pos/PosScreen.tsx` usando estado local; **no usa `@pos/pos-core`** (aún no migrada). El modo admin tiene 12 sub-vistas en `AdminLayout.tsx`: `inventory`, `bodega`, `dashboard`, `staff`, `tips`, `printer`, `email`, `keyboard`, `order-naming`, `report-inventory`, `report-bodega`, `reorder`.
+
+- **`apps/pos-mobile`** — SPA React 19 + TypeScript + Vite. Puerto 5174. Tres pestañas: catálogo (POS), ticket y cuenta. Estructura en `layout/MobileShell.tsx` + hooks de `@pos/pos-core`. **Sí usa `@pos/pos-core`** — fuente de verdad para lógica compartida.
+
+- **`apps/shell`** — Electron 31 (CommonJS). Embebe backend y sirve frontend compilado. Flujo primer uso con `setup.html`. IPC en `preload.js` (`window.electronAPI`, `window.setupAPI`). Puertos candidatos: 3000-3003, 3010, 3100, 17321-17323.
 
 ### Paquetes (`packages/`)
 
-Todos son `"type": "module"`, exportan desde `src/index.ts(x)`, y se consumen vía alias `@pos/*`:
+Todos son `"type": "module"`, exportan desde `src/index.ts(x)`, se consumen vía alias `@pos/*`:
 
 | Paquete | Propósito |
 |---------|-----------|
 | `@pos/types` | Tipos compartidos: `AuthUser`, `Product`, `Category`, `CartItem`, `SavedOrder` |
-| `@pos/api-client` | `apiRequest()` con JWT auto-inject. Resuelve URL del backend (Electron IPC → env → proxy) |
-| `@pos/auth` | `AuthProvider` + `useAuth()`. Persiste JWT y usuario en localStorage |
-| `@pos/ui-kit` | Componentes React: Button, Input, Card, Toast, NumKeypad, SwipeRow, BottomSheet, etc. Exporta `./tokens.css` |
+| `@pos/api-client` | `apiRequest()` con JWT auto-inject. Resuelve URL (Electron IPC → env → proxy Vite) |
+| `@pos/auth` | `AuthProvider` + `useAuth()`. Persiste JWT en localStorage |
+| `@pos/ui-kit` | Componentes React: Button, Input, Card, Toast, NumKeypad, SwipeRow, BottomSheet, TouchKeyboard, etc. Exporta `./tokens.css` |
+| `@pos/pos-core` | Lógica de POS compartida: `useCatalog`, `useMultiTicket`, `useCheckout`, `useOrders`, `usePrinting`, utilidades `fmt`/`money`/`toNum`. Solo lo consume `pos-mobile` hoy; `pos-tablet` tiene su propia lógica local. |
 
 ### Resolución de paquetes
 
-Los alias se configuran en dos lugares que deben mantenerse sincronizados:
-- `apps/pos-tablet/vite.config.ts` → `resolve.alias`
+Alias configurados en dos lugares que deben mantenerse sincronizados por cada frontend:
+- `apps/pos-tablet/vite.config.ts` → `resolve.alias` (5 paquetes, sin `@pos/pos-core`)
 - `apps/pos-tablet/tsconfig.app.json` → `compilerOptions.paths`
+- `apps/pos-mobile/vite.config.ts` → `resolve.alias` (5 paquetes, incluye `@pos/pos-core`)
+- `apps/pos-mobile/tsconfig.app.json` → `compilerOptions.paths`
 
 ### Backend: estructura de un endpoint
 
-Ruta: `src/routes/*.routes.js` → Controller: `src/controllers/*.controller.js` → Service: `src/services/*.service.js` → DB: `src/config/db.js`.
+`src/routes/*.routes.js` → `src/controllers/*.controller.js` → `src/services/*.service.js` → `src/config/db.js`
 
-Helpers de DB disponibles:
-- `db.query(sql, params)` — SELECT y cualquier DML; retorna `{ rows, rowCount, lastID, changes }`
-- `db.queryClient(client, sql, params)` — igual pero usando el cliente de una transacción abierta
+Helpers de DB:
+- `db.query(sql, params)` — SELECT y DML; retorna `{ rows, rowCount, lastID, changes }`
+- `db.queryClient(client, sql, params)` — igual, dentro de una transacción
 - `db.exec(sql)` — DDL sin params (ALTER TABLE, CREATE INDEX, etc.)
-- `withTransaction(async fn)` — BEGIN IMMEDIATE / COMMIT / ROLLBACK. El `fn` recibe el cliente sqlite; usa `db.queryClient(client, sql, params)` dentro.
+- `withTransaction(async fn)` — BEGIN IMMEDIATE / COMMIT / ROLLBACK; `fn` recibe el cliente sqlite
 
-Capa Model (`src/models/`) solo existe para `categories`, `products`, `users`. El resto de los servicios (bodega, sales, reports…) consultan la DB directamente.
-
-**⚠️ Gotcha de rutas**: `src/routes/index.js` existe pero **no se usa**. Las rutas se registran **individualmente en `src/app.js`** usando el helper `lazyRoute(path, mountPoint)` que hace dynamic import para reducir tiempo de arranque. Al agregar un nuevo router hay que importarlo con `lazyRoute` y montarlo en `app.js`.
-
-**Rutas de configuración** (`/api/settings`): impresora estándar y de barra, modo impresora, porcentaje de propina, alerta de email (con contraseña SMTP cifrada via `utils/crypto-settings.js`), umbrales de stock bajo/crítico, layout de teclado táctil, nomenclatura de órdenes. Solo admin.
+**⚠️ Gotcha de rutas**: las rutas se registran individualmente en `src/app.js` con `lazyRoute(() => import(...))`. Al agregar un router hay que importarlo ahí.
 
 ### Esquema y migraciones
 
-Esquema inicial en `src/config/db.init.js` → función `bootstrapDB()` (SQL en `BOOTSTRAP_SQL`). Las migraciones posteriores son funciones `migrateXxx()` en el mismo archivo, guardadas con una clave en la tabla `settings` para evitar re-ejecución. Se llaman desde `initDB()` e `initDBSchema()`.
+Esquema inicial en `src/config/db.init.js` → `bootstrapDB()` (ejecutado una vez; flag `schema_bootstrapped` en tabla `settings`). Migraciones posteriores: funciones `migrateXxx()` en el mismo archivo, idempotentes por clave en `settings`. Se llaman desde `initDB()` e `initDBSchema()`.
 
-### Sistema de bodega / BOM (Bill of Materials)
+### Sistema de bodega / BOM
 
-Permite que los productos descuenten materia prima (insumos) en lugar de su propio `stock`.
-
-**Tablas clave:**
-- `insumos` — materias primas con `stock_actual`, `stock_min`, `stock_critico`, `costo_unitario`
+- `insumos` — materias primas con stock, umbrales y costo
 - `recetas` — mapeo `producto_id → insumo_id + cantidad_por_porcion`
-- `compras_insumo` — historial de compras con conversión de unidades y costo promedio ponderado
-- `movimientos_insumo` — auditoría de entradas (compra), salidas (venta) y ajustes físicos
+- `compras_insumo` / `movimientos_insumo` — historial y auditoría
 - `products.tipo_stock` — `'directo'` (descuenta `products.stock`) | `'receta'` (descuenta insumos)
 
-**Flujo de venta con receta** (en `sales.service.js`):
-```js
-if (product.tipo_stock === "receta") {
-  await deductRecipeService(item.product_id, qty, queryFn, saleId);
-} else {
-  await queryFn(`UPDATE products SET stock = stock - ? WHERE id = ?`, [qty, item.product_id]);
-}
-```
-
-**Stock efectivo para recetas** (usado en `product.service.js` y `email-alert.service.js`):
+**Stock efectivo para recetas** — usar este CASE en cualquier consulta que necesite el stock real:
 ```sql
 CASE
   WHEN COALESCE(p.tipo_stock, 'directo') = 'receta' THEN
@@ -139,33 +140,36 @@ CASE
   ELSE p.stock
 END
 ```
-Este mismo CASE debe usarse en cualquier consulta que necesite el stock real de un producto.
-
-### Sistema de alertas de email
-
-`email-alert.service.js` monitorea umbrales de stock (bajo y crítico configurables por producto/insumo) y envía alertas via SMTP con nodemailer. Los emails se encolan en la tabla `email_outbox` y el worker `email-outbox.service.js` los procesa en background (máx. 8 reintentos, purga emails enviados a los 90 días). El worker arranca en `server.js` después del `listen`.
-
-### Stock Events (SSE)
-
-`utils/stock-events.js` emite actualizaciones de stock en tiempo real vía Server-Sent Events (`GET /api/stock-events`). Usa debounce de 120ms. El frontend se suscribe para mantener el catálogo sincronizado sin polling.
 
 **Rutas bodega:** `GET|POST /api/bodega/insumos`, `PUT|DELETE /api/bodega/insumos/:id`, `POST /api/bodega/insumos/:id/compra`, `POST /api/bodega/insumos/:id/ajuste`, `GET|PUT /api/bodega/receta/:producto_id`, `GET /api/bodega/productos`. RBAC: lectura/compra/ajuste → admin + supervisor; creación/edición/receta → solo admin.
 
+### Alertas de email
+
+`email-alert.service.js` monitorea umbrales de stock. Los emails se encolan en `email_outbox` y el worker `email-outbox.service.js` los procesa (máx. 8 reintentos, purga a 90 días). Arranca en `server.js` tras el `listen`.
+
+### Stock Events (SSE)
+
+`utils/stock-events.js` emite actualizaciones en tiempo real via `GET /api/stock-events` (debounce 120ms). El frontend se suscribe para mantener el catálogo sincronizado.
+
+### Rutas de configuración
+
+`/api/settings` (solo admin): impresora estándar y de barra, modo impresora, porcentaje de propina, alerta email (contraseña SMTP cifrada via `utils/crypto-settings.js`), umbrales de stock, layout de teclado táctil, nomenclatura de órdenes.
+
 ### Electron: flujo de arranque
 
-`main.js`: single-instance lock → `initBackendEnv()` (configura `SQLITE_PATH`, `JWT_SECRET` desde `app-config.json`) → detecta puerto libre entre 9 candidatos (3000-3003, 3010, 3100, 17321-17323) → `import()` de `backend/src/server.js` → splash window → main window carga frontend.
+`main.js`: single-instance lock → `initBackendEnv()` (configura `SQLITE_PATH`, `JWT_SECRET` desde `app-config.json`) → detecta puerto libre → `import()` backend → splash → main window.
 
-**IPC expuesto en `preload.js`:**
-- `window.electronAPI` — impresión de recibos, ESC-POS via TCP/IP a impresoras térmicas de red, diálogo guardar PDF/Excel, listado de impresoras, focus de ventana, close guard
-- `window.setupAPI` — flujo de primer uso: crear/importar DB y crear admin
+**IPC (`preload.js`):**
+- `window.electronAPI` — impresión de recibos, ESC-POS TCP/IP, diálogo PDF/Excel, listado de impresoras, focus, close guard
+- `window.setupAPI` — flujo primer uso: crear/importar DB y admin
 
-**Logger:** `utils/logger.js` escribe logs rotados por día en `logs/pos-YYYY-MM-DD.log`, retención 7 días, escritura asíncrona en buffer.
+**Logger:** `utils/logger.js` — logs rotados por día en `logs/pos-YYYY-MM-DD.log`, retención 7 días, escritura async.
 
 ## Convenciones
 
 - Backend: JavaScript vanilla (ES modules), sin TypeScript.
-- Frontend: TypeScript strict (`noUnusedLocals`, `noUnusedParameters`, `erasableSyntaxOnly`).
+- Frontends: TypeScript strict (`noUnusedLocals`, `noUnusedParameters`, `erasableSyntaxOnly`).
 - Electron shell: CommonJS.
-- CSS plano por componente (no CSS modules, no Tailwind). Tokens de diseño en `@pos/ui-kit/tokens.css`.
+- CSS plano por componente (no CSS modules, no Tailwind). Tokens en `@pos/ui-kit/tokens.css`.
 - Sin test runner configurado.
 - Variables de entorno del backend en `apps/backend/.env` (`SQLITE_PATH`, `HOST`, `PORT`, `JWT_SECRET`).

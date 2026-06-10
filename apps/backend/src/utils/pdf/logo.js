@@ -11,7 +11,7 @@ export const logoExists = existsSync(LOGO_PATH);
 
 /**
  * Dibuja el logo naranja en el documento pdfkit.
- * Si el archivo no existe, escribe "FÉNIX" en naranja como fallback.
+ * Si el archivo no existe, escribe "TECPANCITO" en naranja como fallback.
  *
  * @param {PDFDocument} doc
  * @param {number} x
@@ -28,10 +28,12 @@ export function drawLogo(doc, x, y, w, h) {
       // fallback a texto si la imagen falla
     }
   }
+  // Calcula tamaño que cabe en el ancho dado (Helvetica-Bold ≈ 0.63pt/char por pt de fontSize)
+  const fs = Math.min(Math.round(h * 0.7), Math.floor(w / 6.3));
   doc.save()
      .fillColor("#E97316")
      .font("Helvetica-Bold")
-     .fontSize(Math.round(h * 0.7))
-     .text("FÉNIX", x, y + h * 0.15, { width: w, align: "left", lineBreak: false })
+     .fontSize(fs)
+     .text("TECPANCITO", x, y + (h - fs) * 0.5, { width: w, align: "left", lineBreak: false })
      .restore();
 }

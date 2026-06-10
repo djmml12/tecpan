@@ -348,7 +348,7 @@ export const sendTodayLogoutSummaryEmail = async (req, res) => {
         from:        `"${config.senderName}" <${config.senderEmail}>`,
         to:          recipients.to,
         cc:          recipients.cc,
-        subject:     `${config.subjectPrefix || "FÉNIX"} - Resumen del día ${summary.date}`,
+        subject:     `${config.subjectPrefix || "TECPANCITO"} - Resumen del día ${summary.date}`,
         text:        `Resumen del día ${summary.date} adjunto en PDF.`,
         attachments: [{ filename: `resumen_${summary.date}.pdf`, content: pdfBuffer, contentType: "application/pdf" }],
       });
@@ -403,7 +403,7 @@ export const sendSalesRangeReportEmail = async (req, res) => {
         from:    `"${config.senderName}" <${config.senderEmail}>`,
         to:      recipients.to,
         cc:      recipients.cc,
-        subject: `${config.subjectPrefix || "FÉNIX"} - Reporte ${label} ${from} a ${to}`,
+        subject: `${config.subjectPrefix || "TECPANCITO"} - Reporte ${label} ${from} a ${to}`,
         text:    `Adjunto reporte ${label} de ventas del rango ${from} a ${to} en formato ${format.toUpperCase()}.`,
         attachments: [attachment],
       });
@@ -455,7 +455,7 @@ export const sendInventoryReportEmail = async (req, res) => {
         from:    `"${config.senderName}" <${config.senderEmail}>`,
         to:      recipients.to,
         cc:      recipients.cc,
-        subject: `${config.subjectPrefix || "FÉNIX"} - Reporte inventario ${todayString()}`,
+        subject: `${config.subjectPrefix || "TECPANCITO"} - Reporte inventario ${todayString()}`,
         text:    `Adjunto reporte de inventario en formato ${format.toUpperCase()}.`,
         attachments: [attachment],
       });

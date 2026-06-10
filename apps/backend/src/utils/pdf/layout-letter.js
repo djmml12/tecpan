@@ -16,33 +16,44 @@ export function createLetterDoc(title, subtitle = "") {
   function drawHeader() {
     const _sx = doc.x, _sy = doc.y;
     const m  = LETTER.marginX;
-    const y0 = LETTER.marginY;
     const cw = LETTER.contentW;
+    const pw = LETTER.width;
 
-    drawLogo(doc, m, y0 + 2, LETTER.logoW, LETTER.logoH);
+    const y0 = LETTER.marginY;
 
+    // Línea mostaza inferior del header
+    const lineY = y0 + LETTER.headerH - 6;
     doc.save()
-       .fillColor(C.text).font("Helvetica-Bold").fontSize(LETTER.titleSize)
-       .text(title, m, y0 + 4, { width: cw, align: "center", lineBreak: false })
+       .strokeColor(C.orange).lineWidth(2)
+       .moveTo(m, lineY).lineTo(m + cw, lineY).stroke()
        .restore();
 
+    // TECPANCITO — mostaza, izquierda
+    doc.save()
+       .fillColor(C.orange).font("Helvetica-Bold").fontSize(22)
+       .text("TECPANCITO", m, y0 + 6, { width: 160, lineBreak: false })
+       .restore();
+
+    // Título — marrón oscuro, centrado
+    doc.save()
+       .fillColor(C.text).font("Helvetica-Bold").fontSize(22)
+       .text(title, m, subtitle ? y0 + 6 : y0 + 16, { width: cw, align: "center", lineBreak: false })
+       .restore();
+
+    // Subtítulo — mostaza profunda, centrado
     if (subtitle) {
       doc.save()
-         .fillColor(C.muted).font("Helvetica").fontSize(LETTER.subtitleSize)
-         .text(subtitle, m, y0 + 4 + LETTER.titleSize + 3, { width: cw, align: "center", lineBreak: false })
+         .fillColor(C.orangeDeep).font("Helvetica-Bold").fontSize(14)
+         .text(subtitle, m, y0 + 6 + 22 + 5, { width: cw, align: "center", lineBreak: false })
          .restore();
     }
 
+    // Fecha — muted, derecha
     doc.save()
-       .fillColor(C.muted).font("Helvetica").fontSize(LETTER.labelSize)
-       .text(fmt.todayFull(), m, y0 + 4, { width: cw, align: "right", lineBreak: false })
+       .fillColor(C.muted).font("Helvetica").fontSize(10)
+       .text(fmt.todayFull(), m, y0 + 6, { width: cw, align: "right", lineBreak: false })
        .restore();
 
-    const lineY = y0 + LETTER.headerH - 6;
-    doc.save()
-       .strokeColor(C.orange).lineWidth(1.5)
-       .moveTo(m, lineY).lineTo(m + cw, lineY).stroke()
-       .restore();
     doc.x = _sx; doc.y = _sy;
   }
 
@@ -156,7 +167,7 @@ export function drawKpiText(doc, pairs, x, y, w, opts = {}) {
        .restore();
 
     doc.save()
-       .fillColor(C.text).font("Helvetica-Bold").fontSize(valueSize)
+       .fillColor(C.orange).font("Helvetica-Bold").fontSize(valueSize)
        .text(String(kpi.value), cx + labelW, cy + 1, {
          width: valueW, align: "right", lineBreak: false, ellipsis: true,
        })
@@ -173,9 +184,14 @@ export function drawKpiText(doc, pairs, x, y, w, opts = {}) {
 export function drawTableHeader(doc, cols, x, y, h = 20) {
   const _sx = doc.x, _sy = doc.y;
   const totalW = cols.reduce((s, c) => s + c.width, 0);
+
+  // Fondo naranja suave + barra izquierda naranja sólida
+  doc.save().rect(x, y, totalW, h).fill(C.orangeMuted).restore();
+  doc.save().rect(x, y, 2, h).fill(C.orange).restore();
+
+  // Línea inferior naranja
   doc.save()
-     .strokeColor(C.text).lineWidth(0.8)
-     .moveTo(x, y).lineTo(x + totalW, y).stroke()
+     .strokeColor(C.orange).lineWidth(0.8)
      .moveTo(x, y + h).lineTo(x + totalW, y + h).stroke()
      .restore();
 
@@ -197,19 +213,22 @@ export function drawTableRow(doc, cols, values, x, y, h = LETTER.tableRowH, opts
   const _sx = doc.x, _sy = doc.y;
   const totalW = cols.reduce((s, c) => s + c.width, 0);
 
-  if (opts.even) {
+  if (opts.bold) {
+    doc.save().rect(x, y, totalW, h).fill(C.orangeMuted).restore();
+  } else if (opts.even) {
     doc.save().rect(x, y, totalW, h).fill(C.bg).restore();
   }
 
   doc.save()
-     .strokeColor(C.border).lineWidth(0.3)
+     .strokeColor(opts.bold ? C.orange : C.border).lineWidth(opts.bold ? 0.8 : 0.3)
      .moveTo(x, y + h).lineTo(x + totalW, y + h).stroke()
      .restore();
 
+  const textColor = opts.bold ? C.orange : C.text;
   let cx = x;
   cols.forEach((col, i) => {
     doc.save()
-       .fillColor(C.text)
+       .fillColor(textColor)
        .font(opts.bold ? "Helvetica-Bold" : "Helvetica")
        .fontSize(LETTER.tableSize)
        .text(String(values[i] ?? ""), cx + 5, y + (h - LETTER.tableSize) / 2 + 1, {
@@ -226,13 +245,15 @@ export function drawTableRow(doc, cols, values, x, y, h = LETTER.tableRowH, opts
 
 export function drawSectionTitle(doc, title, x, y, w) {
   const _sx = doc.x, _sy = doc.y;
-  doc.save().roundedRect(x, y + 1, 3, LETTER.headingSize + 2, 1).fill(C.orange).restore();
+  const bh = LETTER.headingSize + 8;
+  doc.save().rect(x, y, w, bh).fill(C.orangeMuted).restore();
+  doc.save().roundedRect(x, y, 3, bh, 1).fill(C.orange).restore();
   doc.save()
      .fillColor(C.text).font("Helvetica-Bold").fontSize(LETTER.headingSize)
-     .text(title, x + 10, y, { width: w - 10, lineBreak: false })
+     .text(title, x + 10, y + (bh - LETTER.headingSize) / 2, { width: w - 10, lineBreak: false })
      .restore();
   doc.x = _sx; doc.y = _sy;
-  return y + LETTER.headingSize + LETTER.sectionGap / 2;
+  return y + bh + LETTER.sectionGap / 2;
 }
 
 // ── Salto de página ───────────────────────────────────────────────────────────
