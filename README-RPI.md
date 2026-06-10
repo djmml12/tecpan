@@ -40,9 +40,10 @@ El script detecta la impresora, crea una cola Raw en CUPS y te da la URL exacta 
 
 Desde cualquier dispositivo en la misma red:
 
-```
-http://<ip-de-la-raspberry>:3000
-```
+| Interfaz | URL | Uso |
+|----------|-----|-----|
+| POS Tablet | `http://<ip>:3000` | Caja / administración |
+| POS Mobile | `http://<ip>:5174` | Meseros / clientes |
 
 Login inicial: `admin` / `admin123` — **cambiar desde Admin → Staff después del primer acceso**.
 
@@ -52,12 +53,17 @@ Login inicial: `admin` / `admin123` — **cambiar desde Admin → Staff después
 # Arranque manual (sin systemd)
 bash start.sh
 
-# Estado del servicio
+# Estado de los servicios
 sudo systemctl status tecpan-pos
-sudo journalctl -u tecpan-pos -f
+sudo systemctl status tecpan-mobile
 
-# Reiniciar servicio
+# Logs en vivo
+sudo journalctl -u tecpan-pos -f
+sudo journalctl -u tecpan-mobile -f
+
+# Reiniciar servicios
 sudo systemctl restart tecpan-pos
+sudo systemctl restart tecpan-mobile
 
 # Conectar a WiFi
 bash scripts/rpi/wifi-connect.sh
@@ -71,7 +77,9 @@ bash scripts/rpi/setup-cups.sh
 ```bash
 git pull
 npm run build --workspace=apps/pos-tablet
+npm run build --workspace=apps/pos-mobile
 sudo systemctl restart tecpan-pos
+sudo systemctl restart tecpan-mobile
 ```
 
 ## Notas
