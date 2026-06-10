@@ -1,0 +1,64 @@
+/* ── Auth ─────────────────────────────────────────────────── */
+
+export type AuthUser = {
+  id:           number;
+  name:         string;
+  email:        string;
+  role?:        string;
+  role_name?:   string;
+  role_id?:     number;
+  permissions?: string[];
+};
+
+/* ── Catálogo ─────────────────────────────────────────────── */
+
+export interface Product {
+  id:           number;
+  name:         string;
+  price:        number | string;
+  stock?:       number | null;
+  category_id?: number | null;
+  tipo_stock?:  "directo" | "receta";
+}
+
+export interface Category {
+  id:   number;
+  name: string;
+}
+
+/* ── Ticket / carrito ─────────────────────────────────────── */
+
+export interface CartItem {
+  productId: number;
+  name:      string;
+  price:     number;
+  quantity:  number;
+  notes?:    string;
+}
+
+/* ── Órdenes guardadas ────────────────────────────────────── */
+
+export interface SavedOrder {
+  id:              number;
+  monthly_number?: number;
+  reference:       string;
+  total:           number | string;
+  tip_amount?:     number | string;
+  items_count?:    number;
+  created_at:      string;
+  notes?:          string;
+}
+
+/* ── Ventas cobradas ──────────────────────────────────────── */
+
+export interface PaidSale {
+  id:              number;
+  monthly_number?: number;
+  reference:       string;
+  total:           number | string;
+  tip_amount?:     number | string;
+  items_count?:    number;
+  user_name?:      string;
+  created_at:      string;
+  paid_at?:        string;
+}

@@ -1,0 +1,471 @@
+/* ============================================================
+   LogoutSummaryScreen — Cierre del día · Tecpancito GUI
+   ============================================================ */
+
+.ls-shell {
+  position: relative;
+  min-height: 100dvh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: none;
+}
+
+/* Plain background — sin puntos */
+.ls-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--bg);
+}
+
+/* ── Card ──────────────────────────────────────────────── */
+
+.ls-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 720px;
+  background: var(--bg-elev);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 28px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: ls-card-in 320ms cubic-bezier(.2, .7, .2, 1);
+}
+
+@keyframes ls-card-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Header ────────────────────────────────────────────── */
+
+.ls-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.ls-moon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(160deg, #F5C944, var(--accent) 55%, var(--accent-deep));
+  color: #2B1608;
+  border: 1.5px solid var(--accent-deep);
+}
+
+.ls-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.ls-title {
+  font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+  font-weight: 900;
+  color: var(--fg-1);
+  letter-spacing: -0.01em;
+  margin: 0;
+  line-height: 1;
+}
+
+.ls-subtitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Loading ───────────────────────────────────────────── */
+
+.ls-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  color: var(--fg-3);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* ── Stats grid ────────────────────────────────────────── */
+
+.ls-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.ls-stat-card {
+  background: var(--bg);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-md, 14px);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ls-stat-card--highlight {
+  background: linear-gradient(160deg, #2B1608, #3A1F0B 60%, #2B1608);
+  border-color: #3A1F0B;
+}
+
+.ls-stat-card--utility {
+  background: linear-gradient(160deg, color-mix(in oklab, var(--ok) 18%, var(--bg)), var(--bg));
+  border-color: color-mix(in oklab, var(--ok) 40%, transparent);
+}
+
+.ls-stat-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.ls-stat-card--highlight .ls-stat-label { color: rgba(244, 236, 216, 0.7); }
+.ls-stat-card--utility .ls-stat-label   { color: var(--ok); }
+
+.ls-stat-value {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--fg-1);
+  line-height: 1.1;
+}
+
+.ls-stat-card--highlight .ls-stat-value { color: #F4ECD8; }
+.ls-stat-card--utility .ls-stat-value   { color: var(--ok); }
+
+.ls-stat-delta {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-3);
+  margin-top: 2px;
+}
+
+.ls-stat-card--highlight .ls-stat-delta { color: rgba(244, 236, 216, 0.55); }
+.ls-stat-card--utility .ls-stat-delta   { color: var(--ok); opacity: 0.75; }
+
+/* ── Tips note ─────────────────────────────────────────── */
+
+.ls-tips-note {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm, 10px);
+  background: color-mix(in oklab, var(--warn) 8%, transparent);
+  border: 1px solid color-mix(in oklab, var(--warn) 25%, transparent);
+  font-size: 12px;
+  color: var(--fg-3);
+  text-align: center;
+}
+
+/* ── Sales section ─────────────────────────────────────── */
+
+.ls-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ls-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+}
+
+.ls-section-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.ls-section-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tecpan-dark .ls-section-count { color: var(--accent); }
+
+.ls-section-count--empty {
+  background: var(--bg-deeper);
+  color: var(--fg-3);
+  border: 1px solid var(--border-card);
+}
+
+/* Sales list */
+.ls-ventas-list {
+  background: var(--bg);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-md, 14px);
+  padding: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.ls-venta-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm, 10px);
+  transition: background 140ms;
+}
+
+.ls-venta-row:hover { background: var(--bg-soft); }
+
+.ls-venta-num {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.ls-venta-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ls-venta-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ls-venta-meta {
+  font-size: 11.5px;
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.ls-venta-amount {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--fg-1);
+  text-align: right;
+}
+
+.ls-empty {
+  padding: 36px 20px;
+  text-align: center;
+  color: var(--fg-3);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.ls-empty-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 10px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: var(--bg-elev);
+  border: 1.5px solid var(--border-strong);
+  color: var(--fg-4);
+}
+
+/* ── Action buttons ────────────────────────────────────── */
+
+.ls-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.ls-actions-grid .uk-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ls-email-lock-note {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm, 10px);
+  border: 1px solid color-mix(in oklab, var(--warn) 32%, transparent);
+  background: color-mix(in oklab, var(--warn) 10%, transparent);
+  color: var(--fg-2);
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ── CTA row ───────────────────────────────────────────── */
+
+.ls-cta-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+}
+
+.ls-cta-row .uk-btn--danger {
+  background: linear-gradient(160deg, #D9583A, var(--rec) 55%, var(--rec-deep));
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1.5px solid var(--rec-deep);
+}
+
+.ls-cta-row .uk-btn--danger:hover:not(:disabled) { filter: brightness(1.05); }
+.ls-cta-row .uk-btn--danger:active:not(:disabled) { filter: brightness(0.95); }
+
+/* ── Confirm overlay ───────────────────────────────────── */
+
+.ls-confirm-back {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in oklab, #2B1608 55%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: ls-fade-in 200ms;
+}
+
+@keyframes ls-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.ls-confirm-card {
+  max-width: 460px;
+  width: 100%;
+  background: var(--bg-elev);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 24px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: ls-scale-in 220ms cubic-bezier(.2,.7,.2,1);
+}
+
+@keyframes ls-scale-in {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.ls-confirm-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  background: var(--rec-soft);
+  border: 1.5px solid color-mix(in oklab, var(--rec) 40%, transparent);
+  color: var(--rec);
+}
+
+.ls-confirm-title {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--fg-1);
+  line-height: 1.1;
+  margin: 0;
+}
+
+.ls-confirm-body {
+  font-size: 14px;
+  color: var(--fg-2);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.ls-confirm-body strong { color: var(--fg-1); }
+
+.ls-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+/* ── Responsive ────────────────────────────────────────── */
+
+@media (max-width: 700px) {
+  .ls-shell { padding: 12px 16px; }
+  .ls-card  { padding: 18px 16px; max-height: calc(100dvh - 24px); }
+  .ls-stats { grid-template-columns: repeat(2, 1fr); }
+  .ls-actions-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-height: 620px) {
+  .ls-shell { align-items: flex-start; padding: 8px 16px; }
+  .ls-card  { gap: 14px; padding: 14px 16px; max-height: calc(100dvh - 16px); }
+  .ls-moon  { width: 44px; height: 44px; border-radius: 14px; }
+  .ls-moon svg { width: 22px; height: 22px; }
+  .ls-title { font-size: 1.2rem; }
+  .ls-stat-card { padding: 10px 12px; }
+  .ls-stat-value { font-size: 15px; }
+  .ls-ventas-list { max-height: 160px; }
+}
+
+@media (max-height: 480px) {
+  .ls-stats { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Surface Go Gen1 (3:2, ~1200×800 at 150%) */
+@media (min-aspect-ratio: 1.45/1) and (max-aspect-ratio: 1.75/1) and (max-width: 1850px) {
+  .ls-shell { padding: 10px 16px; }
+  .ls-card  {
+    width: min(100%, 800px);
+    max-height: calc(100dvh - 20px);
+    padding: 18px 20px;
+    gap: 14px;
+  }
+  .ls-stat-card { padding: 10px 12px; }
+  .ls-stat-value { font-size: 16px; }
+  .ls-venta-row { padding: 8px 10px; }
+}

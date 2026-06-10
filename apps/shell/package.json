@@ -1,0 +1,66 @@
+{
+  "name": "pos-tablet-shell",
+  "private": true,
+  "version": "2.0.0",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev":     "node -e \"const url=process.env.POS_SHELL_URL||'http://127.0.0.1:5173'; require('child_process').spawn('npx',['wait-on',url],{stdio:'inherit',shell:false}).on('exit',code=>process.exit(code??0));\" && electron .",
+    "bundle:backend": "node ../../scripts/build-backend-bundle.js",
+    "predist": "powershell -ExecutionPolicy Bypass -File ../../scripts/build-installer.ps1 -PrepareOnly",
+    "prepack": "powershell -ExecutionPolicy Bypass -File ../../scripts/build-installer.ps1 -PrepareOnly",
+    "dist":    "electron-builder --win nsis",
+    "pack":    "electron-builder --win dir"
+  },
+  "build": {
+    "appId": "com.fenix.pos",
+    "productName": "Fénix POS",
+    "copyright": "Copyright © 2025 Fénix POS",
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "setup.html"
+    ],
+    "extraResources": [
+      {
+        "from": ".bundle/backend",
+        "to":   "backend",
+        "filter": ["**/*", "!**/.cache/**"]
+      },
+      {
+        "from": "../pos-tablet/dist",
+        "to":   "frontend",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../pos-tablet/public/logo.png",
+        "to":   "frontend/logo.png"
+      }
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "../pos-tablet/public/logo.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Fénix POS",
+      "runAfterFinish": true,
+      "include": "installer.nsh"
+    },
+    "directories": {
+      "output": "../../dist-electron"
+    }
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.6.0",
+    "electron":          "31.7.7",
+    "electron-builder":  "^25.1.8",
+    "wait-on":           "^9.0.4"
+  }
+}

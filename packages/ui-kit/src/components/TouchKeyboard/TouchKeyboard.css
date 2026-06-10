@@ -1,0 +1,139 @@
+/* ──────────────────────────────────────────
+   TouchKeyboard — iOS-style, anchored bottom
+   ────────────────────────────────────────── */
+
+.uk-kb {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1100;
+  background: var(--bg-deeper, #ece7e1);
+  border-top: 1.5px solid var(--border-strong, rgba(98, 70, 32, 0.26));
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+
+  transform: translateY(100%);
+  transition: transform var(--dur-slow) var(--ease);
+
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.uk-kb--open {
+  transform: translateY(0);
+}
+
+/* ── Top bar ────────────────────────────── */
+.uk-kb-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: var(--space-2) var(--space-4) 0;
+  min-height: 36px;
+}
+
+.uk-kb-handle {
+  width: 44px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong, rgba(98, 70, 32, 0.26));
+}
+
+.uk-kb-close-btn {
+  position: absolute;
+  right: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--danger, #B33A1F);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--danger, #B33A1F);
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  line-height: 1;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.uk-kb-close-btn:active {
+  background: var(--danger-bg, rgba(179, 58, 31, 0.12));
+}
+
+/* ── Key rows ───────────────────────────── */
+.uk-kb-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: var(--space-2) var(--space-3) var(--space-4);
+}
+
+.uk-kb-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* ── Individual key ─────────────────────── */
+.uk-kb-key {
+  flex: 1;
+  max-width: 60px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-family: inherit;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text-1);
+  text-transform: lowercase;
+
+  background: var(--bg-elev, #faf7f3);
+  border: 1px solid var(--border-strong, rgba(98, 70, 32, 0.22));
+  border-radius: var(--radius-sm);
+
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+  transition:
+    transform  var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+
+.uk-kb-key:active {
+  transform: scale(0.88);
+  background: var(--bg-deeper, var(--surface-2));
+}
+
+/* Action keys (⌫, ⏎) */
+.uk-kb-key--action {
+  max-width: 84px;
+  font-size: var(--text-md);
+  background: var(--bg-deeper, #ddd7cf);
+  color: var(--text-2);
+  border-color: var(--border-strong, rgba(98, 70, 32, 0.22));
+}
+.uk-kb-key--action:active {
+  background: var(--bg, #EDE3CA);
+}
+
+/* Space bar */
+.uk-kb-row--actions .uk-kb-key--space {
+  flex: 3;
+  max-width: none;
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  background: var(--bg-deeper, #ddd7cf);
+  border-color: var(--border-strong, rgba(98, 70, 32, 0.22));
+}

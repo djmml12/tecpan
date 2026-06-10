@@ -1,0 +1,36 @@
+/* ──────────────────────────────────────────
+   Card
+   ────────────────────────────────────────── */
+
+.uk-card {
+  background: var(--bg-elev, var(--surface));
+  border: 1px solid var(--border-strong, var(--border));
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.uk-card--pad-sm  { padding: var(--space-3); }
+.uk-card--pad-md  { padding: var(--space-5); }
+.uk-card--pad-lg  { padding: var(--space-6); }
+
+.uk-card--elevated {
+  border-width: 1.5px;
+}
+
+.uk-card--interactive {
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+
+.uk-card--interactive:active {
+  transform: scale(0.975);
+  background: var(--bg-deeper, var(--surface-2));
+  border-color: var(--primary, var(--border));
+}

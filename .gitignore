@@ -1,0 +1,11 @@
+apps/shell/.bundle/
+dist-electron/
+
+# Generados en runtime — no subir al repo
+apps/backend/.env
+apps/backend/data/
+apps/backend/logs/
+apps/pos-tablet/dist/
+node_modules/
+apps/*/node_modules/
+packages/*/node_modules/

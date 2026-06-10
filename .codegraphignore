@@ -1,0 +1,3 @@
+apps/shell/.bundle/
+dist-electron/
+node_modules/

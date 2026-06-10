@@ -1,0 +1,119 @@
+/* ──────────────────────────────────────────
+   NumKeypad — large touch-friendly numpad
+   ────────────────────────────────────────── */
+
+.uk-numpad {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+/* ── Label above display ────────────────── */
+.uk-numpad-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Display ────────────────────────────── */
+.uk-numpad-display {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  min-height: 72px;
+  padding: var(--space-3) var(--space-5);
+  background: var(--bg, var(--canvas));
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-strong, var(--border));
+}
+
+.uk-numpad-prefix {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.uk-numpad-value {
+  font-size: var(--text-4xl);
+  font-weight: 800;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  word-break: break-all;
+  text-align: right;
+}
+
+/* ── Grid ───────────────────────────────── */
+.uk-numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+/* ── Keys ───────────────────────────────── */
+.uk-numpad-key {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg-elev, var(--surface));
+  border: 1px solid var(--border-strong, var(--border));
+  border-radius: var(--radius-md);
+  color: var(--text-1);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform  var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+.uk-numpad-key:active {
+  transform: scale(0.93);
+  background: var(--bg-deeper, var(--surface-2));
+}
+
+/* Confirm — primary */
+.uk-numpad-key--confirm {
+  background: linear-gradient(160deg, #F5C944, var(--primary, #E8A813) 55%, var(--primary-dark, #B5810A));
+  color: var(--accent-ink, #2B1608);
+  border-color: var(--primary-dark, #B5810A);
+  font-size: var(--text-2xl);
+}
+.uk-numpad-key--confirm:active {
+  background: var(--primary, #E8A813);
+}
+
+/* Action (C / backspace) — muted */
+.uk-numpad-key--action {
+  background: var(--bg-deeper, var(--canvas));
+  color: var(--text-2);
+  font-size: var(--text-lg);
+  border-color: var(--border-strong, var(--border));
+}
+.uk-numpad-key--action:active {
+  background: var(--bg, var(--canvas));
+}
+
+/* Surface Go Gen1 profile */
+@media (min-aspect-ratio: 1.45/1) and (max-aspect-ratio: 1.75/1) and (max-width: 1850px) {
+  .uk-numpad-display {
+    min-height: 56px;
+  }
+
+  .uk-numpad-key {
+    height: 56px;
+  }
+}

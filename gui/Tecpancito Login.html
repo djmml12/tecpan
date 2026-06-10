@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Tecpancito — Acceso</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Black&family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="pos-tokens.css" />
+  <style id="login-inline">
+/* ─────────────────────────────────────────────────────────────────
+   Tecpancito Login — Layout
+   ───────────────────────────────────────────────────────────────── */
+
+.tecpan {
+  flex-direction: row;
+}
+
+/* ─── LEFT: Brand showcase ────────────────────────────────────── */
+.login-brand {
+  flex: 1.1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  min-width: 0;
+}
+
+.brand-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 80% at 30% 20%, var(--tecpan-yellow) 0%, transparent 55%),
+    radial-gradient(80% 60% at 70% 90%, var(--tecpan-yellow-deep) 0%, transparent 60%),
+    linear-gradient(160deg, #F8DD7A 0%, var(--tecpan-yellow) 40%, var(--tecpan-yellow-deep) 100%);
+  z-index: 0;
+}
+.tecpan-dark .brand-bg {
+  background:
+    radial-gradient(120% 80% at 30% 20%, rgba(245, 181, 20, 0.4) 0%, transparent 55%),
+    radial-gradient(80% 60% at 70% 90%, rgba(196, 143, 12, 0.5) 0%, transparent 60%),
+    linear-gradient(160deg, #2B1608 0%, #1F1810 50%, #15100A 100%);
+}
+
+.brand-bg::after {
+  /* paper / grain texture */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.17  0 0 0 0 0.09  0 0 0 0 0.03  0 0 0 0.8 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.08;
+  mix-blend-mode: multiply;
+}
+
+/* Decorative mountains silhouette at the bottom */
+.brand-mountains {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 38%;
+  color: var(--tecpan-brown-dark);
+  opacity: 0.15;
+  z-index: 1;
+  pointer-events: none;
+}
+.tecpan-dark .brand-mountains { color: #000; opacity: 0.5; }
+.brand-mountains svg { width: 100%; height: 100%; display: block; }
+
+.brand-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  max-width: 460px;
+}
+
+.brand-card {
+  background: var(--tecpan-cream);
+  border-radius: 28px;
+  padding: 24px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+  width: 100%;
+  box-shadow:
+    -10px -10px 24px rgba(255, 240, 200, 0.4),
+    14px 14px 32px rgba(60, 35, 10, 0.35),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.6),
+    inset -1px -1px 0 rgba(140, 100, 50, 0.12);
+}
+.tecpan-dark .brand-card {
+  background: var(--bg-soft);
+  box-shadow:
+    -8px -8px 20px rgba(80, 60, 35, 0.35),
+    12px 12px 32px rgba(0, 0, 0, 0.7),
+    inset 1px 1px 0 rgba(80, 60, 35, 0.25),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.brand-logo {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  width: 100%;
+}
+.brand-logo-img {
+  width: 100%;
+  max-width: 380px;
+  height: auto;
+  display: block;
+  border-radius: 18px;
+  box-shadow:
+    0 12px 30px rgba(60, 35, 10, 0.25),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.4);
+}
+.tecpan-dark .brand-logo-img {
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.5),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.brand-tagline {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--tecpan-brown);
+  font-style: italic;
+  padding-top: 4px;
+}
+.tecpan-dark .brand-tagline { color: var(--fg-2); }
+
+.brand-stats {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 20px;
+  margin-top: 12px;
+  background: var(--tecpan-cream-deep);
+  border-radius: var(--radius-md);
+  box-shadow:
+    inset 2px 2px 5px rgba(120, 90, 50, 0.25),
+    inset -2px -2px 5px rgba(255, 250, 235, 0.7);
+}
+.tecpan-dark .brand-stats {
+  background: var(--bg-deeper);
+  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(80, 60, 35, 0.3);
+}
+.brand-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.brand-stat-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--tecpan-brown-dark);
+  letter-spacing: -0.01em;
+}
+.tecpan-dark .brand-stat-val { color: var(--tecpan-cream); }
+.brand-stat-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--tecpan-brown);
+  text-transform: uppercase;
+}
+.tecpan-dark .brand-stat-label { color: var(--fg-3); }
+.brand-stat-divider {
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(180deg, transparent, var(--tecpan-brown) 30%, var(--tecpan-brown) 70%, transparent);
+  opacity: 0.3;
+}
+
+.brand-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: rgba(43, 22, 8, 0.12);
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--tecpan-brown-dark);
+}
+.tecpan-dark .brand-foot {
+  background: rgba(245, 181, 20, 0.15);
+  color: var(--tecpan-yellow);
+}
+.brand-foot-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 0 var(--ok);
+  animation: dotPulse 1.6s ease-in-out infinite;
+}
+
+/* ─── RIGHT: Form ─────────────────────────────────────────────── */
+.login-form-wrap {
+  flex: 1;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-width: 0;
+}
+
+.login-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 18px 22px;
+}
+
+.theme-toggle {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--fg-2);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: -3px -3px 6px var(--sh-light), 3px 3px 6px var(--sh-dark);
+  transition: color 140ms;
+}
+.theme-toggle:hover { color: var(--accent-deep); }
+.tecpan-dark .theme-toggle:hover { color: var(--accent); }
+.theme-toggle:active {
+  box-shadow: inset 2px 2px 4px var(--sh-dark), inset -2px -2px 4px var(--sh-light);
+}
+
+.login-form-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 32px 32px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.login-form {
+  width: 100%;
+  max-width: 480px;
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  border-radius: 24px;
+}
+
+.login-form-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.login-title {
+  font-size: 32px;
+  line-height: 1.05;
+  margin: 0;
+}
+.login-subtitle {
+  font-size: 14px;
+  margin: 0;
+}
+
+.login-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.login-field { display: flex; flex-direction: column; gap: 6px; }
+.login-field-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  padding-left: 4px;
+}
+.login-field .field { padding: 16px 18px; }
+.login-field .field input { font-size: 16px; font-weight: 500; }
+
+.field-eye {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: transparent;
+  border-radius: 50%;
+  color: var(--fg-3);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: color 140ms;
+}
+.field-eye:hover { color: var(--fg-1); }
+
+.login-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.login-row-meta { padding: 0 4px; }
+
+.login-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--fg-2);
+  font-weight: 500;
+}
+.login-check input { position: absolute; opacity: 0; pointer-events: none; }
+.login-check-box {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  box-shadow: inset 2px 2px 4px var(--sh-dark), inset -2px -2px 4px var(--sh-light);
+  transition: all 140ms;
+}
+.login-check input:checked + .login-check-box {
+  background: linear-gradient(160deg, #F5C944, var(--accent), var(--accent-deep));
+  box-shadow: 0 3px 8px var(--accent-glow);
+}
+.login-check input:checked + .login-check-box::after {
+  content: '';
+  width: 10px;
+  height: 6px;
+  border-left: 2.5px solid var(--accent-ink);
+  border-bottom: 2.5px solid var(--accent-ink);
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+
+.login-link {
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-deep);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 140ms;
+}
+.tecpan-dark .login-link { color: var(--accent); }
+.login-link:hover { background: var(--accent-soft); }
+
+.login-submit {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  padding: 18px;
+  margin-top: 6px;
+  position: relative;
+}
+.login-submit.is-loading {
+  pointer-events: none;
+}
+.login-submit.is-loading > span,
+.login-submit.is-loading > svg { opacity: 0.35; }
+.login-submit.is-loading::after {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2.5px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.login-error {
+  min-height: 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rec);
+  text-align: center;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-lo), transparent);
+}
+
+.staff-quick {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.staff-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  background: var(--bg);
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--fg-1);
+  font-family: inherit;
+  box-shadow: -3px -3px 7px var(--sh-light), 3px 3px 7px var(--sh-dark);
+  transition: all 140ms;
+}
+.staff-chip:hover { color: var(--accent-deep); transform: translateY(-1px); }
+.tecpan-dark .staff-chip:hover { color: var(--accent); }
+.staff-chip.is-active {
+  box-shadow:
+    inset 3px 3px 6px var(--sh-dark),
+    inset -3px -3px 6px var(--sh-light),
+    0 0 0 2px var(--accent);
+  color: var(--accent-deep);
+}
+.tecpan-dark .staff-chip.is-active { color: var(--accent); }
+
+.staff-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+  font-family: var(--font-display-rustica);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.3), inset -1px -1px 0 rgba(0,0,0,0.2);
+}
+.staff-name { font-size: 13px; font-weight: 700; }
+.staff-role {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--fg-3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ─── Footer ──────────────────────────────────────────────────── */
+.login-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.login-footer-meta {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--fg-3);
+}
+
+.kbd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--tecpan-brown-dark);
+  color: var(--tecpan-cream);
+  border: 0;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(43, 22, 8, 0.3);
+  transition: transform 140ms;
+}
+.tecpan-dark .kbd-btn {
+  background: var(--tecpan-cream);
+  color: var(--tecpan-brown-dark);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+}
+.kbd-btn:hover { transform: translateY(-1px); }
+.kbd-btn.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* ─── Virtual numeric keyboard ────────────────────────────────── */
+.kbd {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  width: 340px;
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  box-shadow:
+    -8px -8px 20px var(--sh-light),
+    8px 8px 24px var(--sh-dark-strong);
+  transform: translateY(140%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 240ms cubic-bezier(.2,.7,.2,1), opacity 200ms;
+  z-index: 50;
+}
+.kbd.is-open { transform: translateY(0); opacity: 1; pointer-events: auto; }
+.kbd-grip {
+  width: 40px;
+  height: 4px;
+  margin: 0 auto 10px;
+  background: var(--fg-4);
+  border-radius: 4px;
+  opacity: 0.5;
+}
+.kbd-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.kbd-key {
+  height: 56px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  font-family: var(--font-display-rustica);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--fg-1);
+  cursor: pointer;
+  box-shadow: -3px -3px 7px var(--sh-light), 3px 3px 7px var(--sh-dark);
+  transition: all 100ms;
+}
+.kbd-key:hover { color: var(--accent-deep); }
+.tecpan-dark .kbd-key:hover { color: var(--accent); }
+.kbd-key:active {
+  box-shadow: inset 2px 2px 5px var(--sh-dark), inset -2px -2px 5px var(--sh-light);
+}
+.kbd-key-fn { font-family: var(--font-body); font-size: 16px; color: var(--fg-2); }
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .tecpan { flex-direction: column; }
+  .login-brand { flex: 0 0 auto; min-height: 220px; padding: 24px; }
+  .brand-card { padding: 18px 24px; }
+  .brand-logo svg { width: 90px; height: auto; }
+  .brand-name { font-size: 28px; }
+  .brand-stats { padding: 8px 14px; gap: 12px; }
+  .brand-stat-val { font-size: 16px; }
+  .brand-tagline { font-size: 13px; }
+  .login-form { padding: 24px; }
+  .staff-quick { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .kbd { width: calc(100% - 24px); right: 12px; left: 12px; }
+}
+
+</style>
+</head>
+<body>
+  <div class="tecpan tecpan-light" id="root">
+
+    <!-- LEFT: Brand showcase -->
+    <section class="login-brand">
+      <div class="brand-bg"></div>
+      <div class="brand-mountains" aria-hidden="true">
+        <svg viewBox="0 0 1200 400" preserveAspectRatio="none">
+          <!-- distant mountains silhouette -->
+          <path d="M0 320 L120 260 L220 290 L340 220 L460 270 L580 200 L700 240 L820 180 L940 230 L1060 190 L1200 240 L1200 400 L0 400 Z" fill="currentColor" opacity="0.5"/>
+          <path d="M0 360 L100 320 L240 340 L380 290 L520 330 L660 280 L780 310 L920 270 L1050 300 L1200 280 L1200 400 L0 400 Z" fill="currentColor" opacity="0.8"/>
+        </svg>
+      </div>
+
+      <div class="brand-content">
+        <div class="brand-card nm-float">
+          <div class="brand-logo">
+            <img src="assets/logo-tecpancito.jpg" alt="Tecpancito Restaurante" class="brand-logo-img" />
+          </div>
+
+          <div class="brand-tagline">Sistema de punto de venta</div>
+
+          <div class="brand-stats">
+            <div class="brand-stat">
+              <span class="brand-stat-val tnum t-display" id="cur-time">—</span>
+              <span class="brand-stat-label">Hora actual</span>
+            </div>
+            <div class="brand-stat-divider"></div>
+            <div class="brand-stat">
+              <span class="brand-stat-val t-display" id="cur-date">—</span>
+              <span class="brand-stat-label">Fecha</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="brand-foot">
+          <span class="brand-foot-dot"></span>
+          <span>Sistema en línea</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Login form -->
+    <section class="login-form-wrap">
+      <header class="login-header">
+        <button class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="theme-icon">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+          </svg>
+        </button>
+      </header>
+
+      <div class="login-form-container">
+        <div class="login-form nm-float">
+          <div class="login-form-head">
+            <span class="upper" style="color: var(--accent-deep); font-weight: 800;">Acceso al sistema</span>
+            <h1 class="h1 login-title">Bienvenido al POS</h1>
+            <p class="login-subtitle muted">Ingresa tus credenciales para iniciar el turno</p>
+          </div>
+
+          <form class="login-fields" id="login-form" autocomplete="off">
+            <label class="login-field">
+              <span class="login-field-label">Usuario</span>
+              <div class="field">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="8" r="4"/><path d="M4 22c0-4.4 3.6-8 8-8s8 3.6 8 8"/>
+                </svg>
+                <input type="text" id="username" placeholder="Ej. fenix" autocomplete="off" />
+              </div>
+            </label>
+
+            <label class="login-field">
+              <span class="login-field-label">Contraseña</span>
+              <div class="field">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <input type="password" id="password" placeholder="• • • • • •" />
+                <button type="button" class="field-eye" id="toggle-pw" aria-label="Mostrar/ocultar">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="eye-icon">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </button>
+              </div>
+            </label>
+
+            <div class="login-row login-row-meta">
+              <label class="login-check">
+                <input type="checkbox" id="remember" />
+                <span class="login-check-box"></span>
+                <span>Recordar usuario</span>
+              </label>
+              <button type="button" class="login-link">¿Olvidaste tu contraseña?</button>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-xl login-submit" id="submit-btn">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
+              </svg>
+              <span>Ingresar</span>
+            </button>
+
+            <div class="login-error" id="login-error"></div>
+          </form>
+
+          <div class="login-divider"><span>Acceso rápido del personal</span></div>
+
+          <div class="staff-quick">
+            <button class="staff-chip" data-user="fenix">
+              <span class="staff-avatar" style="background: linear-gradient(160deg, #E89640, #B33A1F);">F</span>
+              <span class="staff-name">Fenix</span>
+              <span class="staff-role">Mesero</span>
+            </button>
+            <button class="staff-chip" data-user="maria">
+              <span class="staff-avatar" style="background: linear-gradient(160deg, #6A8E3F, #4A6B25);">M</span>
+              <span class="staff-name">María</span>
+              <span class="staff-role">Cajera</span>
+            </button>
+            <button class="staff-chip" data-user="admin">
+              <span class="staff-avatar" style="background: linear-gradient(160deg, #E8A813, #B5810A);">A</span>
+              <span class="staff-name">Admin</span>
+              <span class="staff-role">Dueño</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="login-footer">
+        <button class="kbd-btn" id="kbd-btn">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+            <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6"/>
+          </svg>
+          <span>Teclado</span>
+        </button>
+        <span class="login-footer-meta muted">v2.0 · Sucursal San Marcos · POS por DLAB</span>
+      </footer>
+    </section>
+
+    <!-- Virtual keyboard (numeric for PIN, hidden by default) -->
+    <div class="kbd" id="virtual-kbd" aria-hidden="true">
+      <div class="kbd-grip"></div>
+      <div class="kbd-grid">
+        <button class="kbd-key" data-k="1">1</button>
+        <button class="kbd-key" data-k="2">2</button>
+        <button class="kbd-key" data-k="3">3</button>
+        <button class="kbd-key" data-k="4">4</button>
+        <button class="kbd-key" data-k="5">5</button>
+        <button class="kbd-key" data-k="6">6</button>
+        <button class="kbd-key" data-k="7">7</button>
+        <button class="kbd-key" data-k="8">8</button>
+        <button class="kbd-key" data-k="9">9</button>
+        <button class="kbd-key kbd-key-fn" data-k="clear">C</button>
+        <button class="kbd-key" data-k="0">0</button>
+        <button class="kbd-key kbd-key-fn" data-k="back">⌫</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // Theme toggle
+      const root = document.getElementById('root');
+      const themeBtn = document.getElementById('theme-toggle');
+      const themeIcon = document.getElementById('theme-icon');
+      const SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>';
+      const MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+
+      const setTheme = (dark) => {
+        root.classList.toggle('tecpan-dark', dark);
+        root.classList.toggle('tecpan-light', !dark);
+        themeIcon.innerHTML = dark ? SUN : MOON;
+        localStorage.setItem('tecpan-dark', dark ? '1' : '0');
+      };
+      setTheme(localStorage.getItem('tecpan-dark') === '1');
+      themeBtn.addEventListener('click', () => {
+        setTheme(!root.classList.contains('tecpan-dark'));
+      });
+
+      // Clock
+      const timeEl = document.getElementById('cur-time');
+      const dateEl = document.getElementById('cur-date');
+      const tick = () => {
+        const now = new Date();
+        timeEl.textContent = now.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit', hour12: false });
+        dateEl.textContent = now.toLocaleDateString('es-GT', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '');
+      };
+      tick();
+      setInterval(tick, 30000);
+
+      // Show/hide password
+      const pwInput = document.getElementById('password');
+      const pwBtn = document.getElementById('toggle-pw');
+      const eyeIcon = document.getElementById('eye-icon');
+      const EYE_OPEN = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+      const EYE_CLOSED = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22M14.12 14.12a3 3 0 1 1-4.24-4.24"/>';
+      pwBtn.addEventListener('click', () => {
+        const isPw = pwInput.type === 'password';
+        pwInput.type = isPw ? 'text' : 'password';
+        eyeIcon.innerHTML = isPw ? EYE_CLOSED : EYE_OPEN;
+      });
+
+      // Staff quick-pick
+      document.querySelectorAll('.staff-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('username').value = btn.dataset.user;
+          pwInput.focus();
+          document.querySelectorAll('.staff-chip').forEach(b => b.classList.remove('is-active'));
+          btn.classList.add('is-active');
+        });
+      });
+
+      // Virtual keyboard
+      const kbd = document.getElementById('virtual-kbd');
+      const kbdBtn = document.getElementById('kbd-btn');
+      let kbdTarget = null;
+      const showKbd = () => { kbd.classList.add('is-open'); kbdBtn.classList.add('is-active'); };
+      const hideKbd = () => { kbd.classList.remove('is-open'); kbdBtn.classList.remove('is-active'); };
+      kbdBtn.addEventListener('click', () => {
+        if (kbd.classList.contains('is-open')) hideKbd();
+        else { kbdTarget = document.activeElement?.matches('input') ? document.activeElement : pwInput; showKbd(); }
+      });
+      document.querySelectorAll('input').forEach(inp => {
+        inp.addEventListener('focus', () => { kbdTarget = inp; });
+      });
+      kbd.querySelectorAll('.kbd-key').forEach(k => {
+        k.addEventListener('click', () => {
+          if (!kbdTarget) return;
+          const key = k.dataset.k;
+          if (key === 'clear') kbdTarget.value = '';
+          else if (key === 'back') kbdTarget.value = kbdTarget.value.slice(0, -1);
+          else kbdTarget.value = kbdTarget.value + key;
+          kbdTarget.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+      });
+
+      // Submit — navigate to POS
+      const form = document.getElementById('login-form');
+      const submitBtn = document.getElementById('submit-btn');
+      const errEl = document.getElementById('login-error');
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const u = document.getElementById('username').value.trim();
+        const p = pwInput.value;
+        if (!u) { errEl.textContent = 'Ingresa un usuario'; return; }
+        // demo — accept anything with password ≥ 1 char OR known staff
+        errEl.textContent = '';
+        submitBtn.classList.add('is-loading');
+        submitBtn.disabled = true;
+        setTimeout(() => {
+          window.location.href = 'Tecpancito POS.html';
+        }, 700);
+      });
+
+      // Remember username
+      const remember = document.getElementById('remember');
+      const usernameInput = document.getElementById('username');
+      const savedUser = localStorage.getItem('tecpan-user');
+      if (savedUser) { usernameInput.value = savedUser; remember.checked = true; }
+      form.addEventListener('submit', () => {
+        if (remember.checked) localStorage.setItem('tecpan-user', usernameInput.value);
+        else localStorage.removeItem('tecpan-user');
+      });
+    })();
+  </script>
+</body>
+</html>

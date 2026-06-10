@@ -1,0 +1,23 @@
+[Unit]
+Description=Fénix POS Backend
+Documentation=https://github.com/tecpan/tecpancito
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__REPO_DIR__/apps/backend
+ExecStart=__NODE__ src/server.js
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tecpan-pos
+
+# Límites razonables para RPi
+LimitNOFILE=65536
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

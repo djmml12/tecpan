@@ -1,0 +1,253 @@
+/* ============================================================
+   Shared report view styles
+   ============================================================ */
+
+.rpt-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+
+/* ── Header ────────────────────────────────────────────────── */
+
+.rpt-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.rpt-header-left {
+  flex: 1;
+}
+
+.rpt-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-1);
+  line-height: 1.2;
+}
+
+.rpt-subtitle {
+  font-size: 12px;
+  color: var(--text-3);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.rpt-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rpt-refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.rpt-refresh-btn:hover:not(:disabled) {
+  background: var(--surface-raised);
+  color: var(--primary);
+}
+
+.rpt-refresh-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.rpt-btn-inner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Alerts bar ────────────────────────────────────────────── */
+
+.rpt-alerts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.rpt-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rpt-badge--critical {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.rpt-badge--low {
+  background: #fef3c7;
+  color: #a16207;
+}
+
+/* ── Search ────────────────────────────────────────────────── */
+
+.rpt-search-bar {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.rpt-search {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--canvas);
+  color: var(--text-1);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.rpt-search:focus {
+  border-color: var(--primary);
+  background: var(--surface);
+}
+
+/* ── Table ─────────────────────────────────────────────────── */
+
+.rpt-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.rpt-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.rpt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.rpt-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+
+.rpt-table th.rpt-num,
+.rpt-table td.rpt-num {
+  text-align: right;
+}
+
+.rpt-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.rpt-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.rpt-table tbody tr:hover {
+  background: var(--surface-raised);
+}
+
+.rpt-table tbody td {
+  padding: 10px 16px;
+  color: var(--text-1);
+  vertical-align: middle;
+}
+
+.rpt-name {
+  font-weight: 600;
+}
+
+.rpt-cat {
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.rpt-muted {
+  color: var(--text-3);
+}
+
+/* Stock status colors */
+.rpt-stock--critical td,
+td.rpt-stock--critical {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.rpt-stock--low td,
+td.rpt-stock--low {
+  color: #a16207;
+  font-weight: 600;
+}
+
+.rpt-empty {
+  text-align: center;
+  color: var(--text-3);
+  padding: 48px 16px !important;
+  font-size: 14px;
+}
+
+/* ── Footer / totals ───────────────────────────────────────── */
+
+.rpt-table tfoot tr {
+  border-top: 2px solid var(--border);
+  background: var(--surface);
+}
+
+.rpt-table tfoot td {
+  padding: 10px 16px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.rpt-total-label {
+  color: var(--text-2) !important;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.rpt-total-val {
+  font-size: 15px;
+  color: var(--primary) !important;
+}
