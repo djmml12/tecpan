@@ -65,10 +65,18 @@
   color: rgba(var(--m-fg-rgb), 0.45);
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
+  white-space: nowrap;
+  min-width: 0;
 
   transition: color 120ms ease;
+}
+
+.ms-tab span:last-child {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ms-tab:active {

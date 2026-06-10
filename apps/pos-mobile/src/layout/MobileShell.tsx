@@ -2,14 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { useCatalog, useMultiTicket, useCheckout, useOrders, usePrinting } from "@pos/pos-core";
 import type { SavedOrder, KitchenTarget } from "@pos/pos-core";
 import { apiRequest } from "@pos/api-client";
+import { useAuth } from "@pos/auth";
 import CatalogTab      from "../features/pos/CatalogTab";
 import TicketTab       from "../features/pos/TicketTab";
 import SplitBillSheet  from "../features/pos/SplitBillSheet";
 import AccountTab      from "../features/account/AccountTab";
+import AdminInventory  from "../features/admin/AdminInventory";
+import DashboardScreen from "../features/dashboard/DashboardScreen";
 import CompletedScreen from "../features/pos/CompletedScreen";
 import "./mobile-shell.css";
 
-type Tab = "pos" | "ticket" | "account";
+type Tab = "pos" | "ticket" | "resumen" | "admin" | "account";
 
 /* ── Icons ───────────────────────────────────────────────── */
 
@@ -47,6 +50,28 @@ function UserIcon() {
   );
 }
 
+function InventoryIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+      <line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
+  );
+}
+
+function ChartIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  );
+}
+
 /* ── Shell ───────────────────────────────────────────────── */
 
 interface MobileShellProps {
@@ -54,6 +79,9 @@ interface MobileShellProps {
 }
 
 export default function MobileShell({ onLogout }: MobileShellProps) {
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
+
   const [activeTab,       setActiveTab]       = useState<Tab>("pos");
   const [completedTotal,  setCompletedTotal]  = useState<number | null>(null);
   const [completedSaleId, setCompletedSaleId] = useState<number | null>(null);
@@ -223,6 +251,10 @@ export default function MobileShell({ onLogout }: MobileShellProps) {
             onCloseTicket={ticket.closeTicket}
           />
         )}
+        {activeTab === "resumen" && isAdmin && <DashboardScreen />}
+        {activeTab === "admin" && isAdmin && (
+          <AdminInventory onChanged={() => void catalog.refresh()} />
+        )}
         {activeTab === "account" && <AccountTab onLogout={onLogout} />}
       </main>
 
@@ -249,6 +281,28 @@ export default function MobileShell({ onLogout }: MobileShellProps) {
           </span>
           <span>Ticket</span>
         </button>
+
+        {isAdmin && (
+          <button
+            className={`ms-tab${activeTab === "resumen" ? " ms-tab--active" : ""}`}
+            onClick={() => setActiveTab("resumen")}
+            aria-current={activeTab === "resumen" ? "page" : undefined}
+          >
+            <ChartIcon />
+            <span>Resumen</span>
+          </button>
+        )}
+
+        {isAdmin && (
+          <button
+            className={`ms-tab${activeTab === "admin" ? " ms-tab--active" : ""}`}
+            onClick={() => setActiveTab("admin")}
+            aria-current={activeTab === "admin" ? "page" : undefined}
+          >
+            <InventoryIcon />
+            <span>Inventario</span>
+          </button>
+        )}
 
         <button
           className={`ms-tab${activeTab === "account" ? " ms-tab--active" : ""}`}

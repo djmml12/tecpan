@@ -1,0 +1,276 @@
+/* ============================================================
+   AdminInventory — gestión de inventario (solo admin)
+   Paleta heredada de los tokens --m-* del pos-mobile
+   ============================================================ */
+
+.ai-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--m-bg);
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────── */
+.ai-header {
+  padding: 16px 16px 6px;
+  flex-shrink: 0;
+}
+
+.ai-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--m-fg);
+  letter-spacing: -0.01em;
+}
+
+.ai-sub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: rgba(var(--m-fg-rgb), 0.5);
+}
+
+/* ── Chips de categoría ──────────────────── */
+.ai-cats {
+  display: flex;
+  gap: 8px;
+  padding: 8px 14px 10px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+
+.ai-cats::-webkit-scrollbar { display: none; }
+
+.ai-cats-loading {
+  font-size: 13px;
+  color: rgba(var(--m-fg-rgb), 0.4);
+  padding: 6px 2px;
+}
+
+.ai-chip {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--m-fg-rgb), 0.15);
+  background: transparent;
+  color: rgba(var(--m-fg-rgb), 0.6);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.ai-chip--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.ai-chip--add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.ai-chip--add:active {
+  background: var(--accent-soft);
+}
+
+/* ── Barra de categoría seleccionada ─────── */
+.ai-catbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 14px 10px;
+  flex-shrink: 0;
+}
+
+.ai-catbar-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px 6px 6px;
+  border: none;
+  background: transparent;
+  color: rgba(var(--m-fg-rgb), 0.7);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.ai-catbar-edit span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-catbar-edit:active { background: rgba(var(--m-fg-rgb), 0.06); }
+
+.ai-add-prod {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 80ms ease;
+}
+
+.ai-add-prod:active { transform: scale(0.96); }
+
+/* ── Lista de productos ──────────────────── */
+.ai-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2px 12px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-prod {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--m-fg-rgb), 0.08);
+  background: rgba(var(--m-fg-rgb), 0.05);
+  color: var(--m-fg);
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms ease, transform 80ms ease;
+}
+
+.ai-prod:active {
+  transform: scale(0.985);
+  background: rgba(var(--m-fg-rgb), 0.09);
+}
+
+.ai-prod-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ai-prod-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--m-fg);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-prod-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-prod-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.ai-prod-stock {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(var(--m-fg-rgb), 0.1);
+  color: rgba(var(--m-fg-rgb), 0.7);
+  font-variant-numeric: tabular-nums;
+}
+
+.ai-prod-stock--receta {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
+.ai-prod > svg {
+  flex-shrink: 0;
+  color: rgba(var(--m-fg-rgb), 0.3);
+}
+
+/* ── Estados ─────────────────────────────── */
+.ai-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.ai-empty {
+  color: rgba(var(--m-fg-rgb), 0.4);
+  font-size: 15px;
+  text-align: center;
+  padding: 0 24px;
+}
+
+/* ── Formularios (BottomSheet) ───────────── */
+.ai-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 2px 8px;
+}
+
+.ai-note {
+  margin: -2px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: rgba(var(--m-fg-rgb), 0.75);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ai-delete {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  border-radius: var(--radius-md, 14px);
+  background: transparent;
+  color: var(--danger);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.ai-delete:active { background: var(--danger-bg); }
+
+.ai-delete--confirm {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.ai-delete:disabled { opacity: 0.5; cursor: default; }

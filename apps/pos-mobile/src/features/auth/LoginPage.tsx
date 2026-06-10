@@ -79,6 +79,7 @@ export default function LoginPage() {
           <img src="/logo.jpeg" alt="Tecpancito" className="mlp-logo" />
         </div>
         <p className="mlp-brand-name">Tecpancito</p>
+        <p className="mlp-brand-sub">Sistema POS</p>
       </div>
 
       {/* ── Formulario ── */}

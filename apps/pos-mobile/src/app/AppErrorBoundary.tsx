@@ -39,7 +39,7 @@ export default class AppErrorBoundary extends Component<Props, State> {
           }}
         >
           <p style={{ margin: "0 0 8px", fontSize: 28, fontWeight: 800, color: "var(--text-1, #1c1917)" }}>
-            Tecpancito
+            Caligua
           </p>
           <p style={{ margin: "0 0 24px", color: "var(--text-2, #57534e)", lineHeight: 1.6, fontSize: 15 }}>
             Ocurrió un error inesperado. Podés recargar sin perder la sesión.
