@@ -47,6 +47,14 @@ const fmtDate = (d: Date) => {
   return `${y}-${m}-${day}`;
 };
 
+/* Etiqueta legible del rango filtrado — solo para nombre de archivo / asunto. */
+const rangeLabelOf = (f: string, t: string): string => {
+  if (!f || !t) return "ventas";
+  if (f === t) return "diario";
+  const days = Math.round((new Date(t).getTime() - new Date(f).getTime()) / 86_400_000) + 1;
+  return days <= 7 ? "semanal" : "mensual";
+};
+
 const presetRange = (p: Preset): { from: string; to: string } => {
   const now = new Date();
   const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -267,9 +275,8 @@ export default function Dashboard() {
   const [sales,             setSales]             = useState<SaleRow[]>([]);
   const [printLoading,      setPrintLoading]      = useState(false);
   const [printingIds,       setPrintingIds]       = useState<Set<number>>(new Set());
-  const [reportFormat,      setReportFormat]      = useState<"excel" | "pdf">("excel");
-  const [downloadingPreset, setDownloadingPreset] = useState<Preset | null>(null);
-  const [emailingPreset,    setEmailingPreset]    = useState<Preset | null>(null);
+  const [downloadingFormat, setDownloadingFormat] = useState<"excel" | "pdf" | null>(null);
+  const [emailingFormat,    setEmailingFormat]    = useState<"excel" | "pdf" | null>(null);
 
   const load = useCallback(async (f: string, t: string) => {
     setLoading(true);
@@ -334,14 +341,15 @@ export default function Dashboard() {
     void load(range.from, range.to);
   };
 
-  const handleDownload = async (p: Preset) => {
-    setDownloadingPreset(p);
+  const handleDownload = async (format: "pdf" | "excel") => {
+    setDownloadingFormat(format);
     try {
       const f = from;
       const t = to;
-      if (!f || !t) throw new Error("Selecciona un rango válido");
+      if (!f || !t) throw new Error("Selecciona una fecha válida");
       if (new Date(f).getTime() > new Date(t).getTime()) throw new Error("La fecha inicial no puede ser mayor que la final");
 
+      const label = rangeLabelOf(f, t);
       const configuredApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
       const hostname = window.location.hostname || "127.0.0.1";
       const isFileProtocol = window.location.protocol === "file:";
@@ -350,12 +358,12 @@ export default function Dashboard() {
         : (isFileProtocol ? `http://${hostname}:3000` : "");
 
       const token = localStorage.getItem("token");
-      const ext = reportFormat === "pdf" ? "pdf" : "xlsx";
-      const url = `${apiBase}/api/reports/sales/export?from=${f}&to=${t}&format=${reportFormat}&label=${p}`;
+      const ext = format === "pdf" ? "pdf" : "xlsx";
+      const url = `${apiBase}/api/reports/sales/export?from=${f}&to=${t}&format=${format}&label=${label}`;
       const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       if (!res.ok) throw new Error("Error al generar el reporte");
       const blob = await res.blob();
-      const defaultName = `reporte_${p}_${f}_a_${t}.${ext}`;
+      const defaultName = `reporte_${label}_${f}_a_${t}.${ext}`;
 
       const electronAPI = (window as Window & { electronAPI?: { saveReportFile?: (p: { bytes: number[]; defaultName: string; ext: string }) => Promise<{ canceled: boolean }> } }).electronAPI;
       if (electronAPI?.saveReportFile) {
@@ -374,7 +382,7 @@ export default function Dashboard() {
     } catch (err: unknown) {
       show(err instanceof Error ? err.message : "Error al descargar el reporte", { type: "error" });
     } finally {
-      if (mountedRef.current) setDownloadingPreset(null);
+      if (mountedRef.current) setDownloadingFormat(null);
     }
   };
 
@@ -397,23 +405,24 @@ export default function Dashboard() {
     }
   };
 
-  const handleEmail = async (p: Preset) => {
-    setEmailingPreset(p);
+  const handleEmail = async (format: "pdf" | "excel") => {
+    setEmailingFormat(format);
     try {
       const f = from;
       const t = to;
-      if (!f || !t) throw new Error("Selecciona un rango válido");
+      if (!f || !t) throw new Error("Selecciona una fecha válida");
       if (new Date(f).getTime() > new Date(t).getTime()) throw new Error("La fecha inicial no puede ser mayor que la final");
 
+      const label = rangeLabelOf(f, t);
       await apiRequest("/reports/sales/email", {
         method: "POST",
-        body: JSON.stringify({ from: f, to: t, format: reportFormat, label: p }),
+        body: JSON.stringify({ from: f, to: t, format, label }),
       });
-      if (mountedRef.current) show(`Reporte ${p} (${f} a ${t}) enviado por correo`, { type: "success" });
+      if (mountedRef.current) show(`Reporte ${format.toUpperCase()} (${f} a ${t}) enviado por correo`, { type: "success" });
     } catch (err: unknown) {
       show(err instanceof Error ? err.message : "Error al enviar el reporte", { type: "error" });
     } finally {
-      if (mountedRef.current) setEmailingPreset(null);
+      if (mountedRef.current) setEmailingFormat(null);
     }
   };
 
@@ -518,46 +527,53 @@ export default function Dashboard() {
         <div className="dash-report-section">
           <div className="dash-report-header">
             <span className="dash-report-title">Generar reportes</span>
-            <select
-              className="dash-format-select"
-              value={reportFormat}
-              onChange={e => setReportFormat(e.target.value as "excel" | "pdf")}
-            >
-              <option value="excel">Excel</option>
-              <option value="pdf">PDF</option>
-            </select>
+            <span className="dash-report-range">
+              {from === to ? from : `${from} → ${to}`}
+            </span>
           </div>
 
           <div className="dash-report-row">
             <span className="dash-report-row-label"><DownloadIcon /> Descargar</span>
-            {(["diario", "semanal", "mensual"] as Preset[]).map(p => (
-              <Button
-                key={p}
-                variant="secondary"
-                size="md"
-                loading={downloadingPreset === p}
-                disabled={downloadingPreset !== null || emailingPreset !== null}
-                onClick={() => void handleDownload(p)}
-              >
-                {p.charAt(0).toUpperCase() + p.slice(1)}
-              </Button>
-            ))}
+            <Button
+              variant="secondary"
+              size="md"
+              loading={downloadingFormat === "pdf"}
+              disabled={downloadingFormat !== null || emailingFormat !== null}
+              onClick={() => void handleDownload("pdf")}
+            >
+              PDF
+            </Button>
+            <Button
+              variant="secondary"
+              size="md"
+              loading={downloadingFormat === "excel"}
+              disabled={downloadingFormat !== null || emailingFormat !== null}
+              onClick={() => void handleDownload("excel")}
+            >
+              Excel
+            </Button>
           </div>
 
           <div className="dash-report-row">
             <span className="dash-report-row-label"><EmailIcon /> Enviar email</span>
-            {(["diario", "semanal", "mensual"] as Preset[]).map(p => (
-              <Button
-                key={p}
-                variant="secondary"
-                size="md"
-                loading={emailingPreset === p}
-                disabled={downloadingPreset !== null || emailingPreset !== null}
-                onClick={() => void handleEmail(p)}
-              >
-                {p.charAt(0).toUpperCase() + p.slice(1)}
-              </Button>
-            ))}
+            <Button
+              variant="secondary"
+              size="md"
+              loading={emailingFormat === "pdf"}
+              disabled={downloadingFormat !== null || emailingFormat !== null}
+              onClick={() => void handleEmail("pdf")}
+            >
+              PDF
+            </Button>
+            <Button
+              variant="secondary"
+              size="md"
+              loading={emailingFormat === "excel"}
+              disabled={downloadingFormat !== null || emailingFormat !== null}
+              onClick={() => void handleEmail("excel")}
+            >
+              Excel
+            </Button>
           </div>
 
         </div>
@@ -574,12 +590,6 @@ export default function Dashboard() {
                 <span className="dash-kpi-value">{card.value}</span>
               </div>
             ))}
-          </div>
-        )}
-
-        {/* ── Top stats ─────────────────────────────── */}
-        {kpi && (kpi.top_product || kpi.top_seller) && (
-          <div className="dash-kpi-grid">
             {kpi.top_product && (
               <div className="dash-kpi-card">
                 <span className="dash-kpi-label">Producto estrella</span>

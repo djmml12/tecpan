@@ -338,6 +338,19 @@ const migrateProductArchiveV1 = async () => {
   );
 };
 
+const migrateUserSoftDeleteV1 = async () => {
+  const { rows } = await db.query(`SELECT value FROM settings WHERE key = 'user_soft_delete_v1'`);
+  if (rows[0]?.value === "1") return;
+  const { rows: cols } = await db.query(`PRAGMA table_info(users)`);
+  if (!cols.some((c) => c.name === "deleted_at")) {
+    db.exec(`ALTER TABLE users ADD COLUMN deleted_at TEXT`);
+  }
+  await db.query(
+    `INSERT INTO settings (key, value) VALUES ('user_soft_delete_v1', '1')
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+  );
+};
+
 // ── Entrypoints ───────────────────────────────────────────────────────────────
 
 // Usado por el flujo de setup de Electron (DB nueva → siempre bootstrapea)
@@ -350,6 +363,7 @@ export const initDBSchema = async () => {
   await migrateSalesIdempotencyV1();
   await migrateCategoryArchiveV1();
   await migrateProductArchiveV1();
+  await migrateUserSoftDeleteV1();
 };
 
 // Usado en cada arranque del servidor
@@ -369,6 +383,7 @@ export const initDB = async () => {
     "sales_idempotency_v1",
     "product_archive_v1",
     "category_archive_v1",
+    "user_soft_delete_v1",
   ];
   const ph = MIGRATION_KEYS.map(() => "?").join(",");
   const { rows: flagRows } = await db.query(
@@ -385,4 +400,5 @@ export const initDB = async () => {
   if (flags["sales_idempotency_v1"]          !== "1")             await migrateSalesIdempotencyV1();
   if (flags["category_archive_v1"]           !== "1")             await migrateCategoryArchiveV1();
   if (flags["product_archive_v1"]            !== "1")             await migrateProductArchiveV1();
+  if (flags["user_soft_delete_v1"]           !== "1")             await migrateUserSoftDeleteV1();
 };

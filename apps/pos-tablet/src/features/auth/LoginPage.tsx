@@ -39,11 +39,21 @@ function EyeOffIcon() {
   );
 }
 
-function KeyboardIcon() {
+function KeyboardOnIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="6" width="20" height="12" rx="2" />
       <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6" />
+    </svg>
+  );
+}
+
+function KeyboardOffIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="6" width="20" height="12" rx="2" />
+      <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6" />
+      <line x1="2" y1="2" x2="22" y2="22" />
     </svg>
   );
 }
@@ -184,7 +194,6 @@ export default function LoginPage() {
                     spellCheck={false}
                     value={identifier}
                     onChange={e => setIdentifier(e.target.value)}
-                    onFocus={() => setShowKeyboard(true)}
                     onKeyDown={e => { if (e.key === "Enter") void handleLogin(); }}
                   />
                 </div>
@@ -200,7 +209,6 @@ export default function LoginPage() {
                     autoComplete="current-password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    onFocus={() => setShowKeyboard(true)}
                     onKeyDown={e => { if (e.key === "Enter") void handleLogin(); }}
                   />
                   <button
@@ -220,6 +228,18 @@ export default function LoginPage() {
               {error}
             </div>
 
+            {/* Keyboard toggle — dentro del formulario, bien visible */}
+            <button
+              type="button"
+              className={`lp-kb-toggle${showKeyboard ? " lp-kb-toggle--active" : ""}`}
+              onPointerDown={e => e.preventDefault()}
+              onClick={() => setShowKeyboard(p => !p)}
+              aria-label={showKeyboard ? "Desactivar teclado táctil" : "Activar teclado táctil"}
+            >
+              {showKeyboard ? <KeyboardOnIcon /> : <KeyboardOffIcon />}
+              <span>{showKeyboard ? "Teclado activo" : "Teclado táctil"}</span>
+            </button>
+
             <Button
               variant="primary"
               size="xl"
@@ -233,25 +253,15 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <footer className="lp-footer">
-          <button
-            type="button"
-            className={`lp-kb-btn${showKeyboard ? " lp-kb-btn--active" : ""}`}
-            onClick={() => setShowKeyboard(p => !p)}
-            aria-label={showKeyboard ? "Cerrar teclado" : "Abrir teclado táctil"}
-          >
-            <KeyboardIcon />
-            <span>Teclado</span>
-          </button>
-
-          {backendUrl && (
+        {backendUrl && (
+          <footer className="lp-footer">
             <span className="lp-backend-url">
               {backendUrl.replace("127.0.0.1", () => {
                 try { return window.location.hostname || "127.0.0.1"; } catch { return "127.0.0.1"; }
               })}
             </span>
-          )}
-        </footer>
+          </footer>
+        )}
       </section>
 
       <TouchKeyboard open={showKeyboard} onClose={() => setShowKeyboard(false)} />

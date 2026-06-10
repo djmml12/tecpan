@@ -41,23 +41,22 @@ export function drawMobileHeader(doc, title, subtitle = "") {
   const px       = MOBILE.paddingX;
   const cw       = MOBILE.contentW;
 
-  // Fondo marrón oscuro (sidebar del POS) con franja mostaza inferior
-  doc.save().rect(0, 0, MOBILE.width, y + h).fill(C.brownDark).restore();
-  doc.save().rect(0, y + h - 2, MOBILE.width, 2).fill(C.orange).restore();
+  // Fondo naranja (incluye el margen superior de 35pt)
+  doc.save().rect(0, 0, MOBILE.width, y + h).fill(C.orange).restore();
 
-  // "TECPANCITO" — mostaza, izquierda
+  // Nombre en blanco — izquierda
   doc.save()
-     .fillColor(C.orange).font("Helvetica-Bold").fontSize(13)
-     .text("TECPANCITO", px, y + 16, { width: 100, lineBreak: false })
+     .fillColor(C.white).font("Helvetica-Bold").fontSize(12)
+     .text("TECPANCITO", px, y + 17, { width: 110, lineBreak: false })
      .restore();
 
-  // Título — crema
+  // Título
   doc.save()
-     .fillColor(C.cream).font("Helvetica-Bold").fontSize(MOBILE.titleSize)
+     .fillColor(C.white).font("Helvetica-Bold").fontSize(MOBILE.titleSize)
      .text(title, px, y + 12, { width: cw, align: "center", lineBreak: false })
      .restore();
 
-  // Subtítulo / fecha — mostaza suave
+  // Subtítulo / fecha
   if (subtitle) {
     doc.save()
        .fillColor(C.orangeLight).font("Helvetica").fontSize(MOBILE.subtitleSize)

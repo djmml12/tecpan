@@ -36,6 +36,11 @@ export default function StaffManager() {
   const [newPw,       setNewPw]       = useState("");
   const [savingPw,    setSavingPw]    = useState(false);
 
+  /* Delete */
+  const [showDeleteSheet, setShowDeleteSheet] = useState(false);
+  const [deleteTarget,    setDeleteTarget]    = useState<User | null>(null);
+  const [deleting,        setDeleting]        = useState(false);
+
   useEffect(() => {
     mountedRef.current = true;
     void Promise.all([
@@ -96,6 +101,28 @@ export default function StaffManager() {
     setShowPwSheet(true);
   };
 
+  const openDelete = (u: User) => {
+    setDeleteTarget(u);
+    setShowDeleteSheet(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await apiRequest(`/users/${deleteTarget.id}`, { method: "DELETE" });
+      if (mountedRef.current) {
+        setUsers(p => p.filter(x => x.id !== deleteTarget.id));
+        setShowDeleteSheet(false);
+        show(`${deleteTarget.name} eliminado`, { type: "info" });
+      }
+    } catch (err: unknown) {
+      show(err instanceof Error ? err.message : "Error al eliminar", { type: "error" });
+    } finally {
+      if (mountedRef.current) setDeleting(false);
+    }
+  };
+
   const handlePasswordReset = async () => {
     if (!pwTarget || !newPw.trim()) { show("Ingresa la nueva contraseña", { type: "warning" }); return; }
     setSavingPw(true);
@@ -149,6 +176,9 @@ export default function StaffManager() {
                 >
                   {u.is_active ? "Desact." : "Activar"}
                 </Button>
+                <Button variant="danger" size="sm" onClick={() => openDelete(u)}>
+                  Eliminar
+                </Button>
               </div>
             ))}
           </div>
@@ -195,6 +225,30 @@ export default function StaffManager() {
           <Input label="Nueva contraseña" value={newPw} onChange={e => setNewPw(e.target.value)} type="password" autoComplete="new-password" />
           <Button variant="primary" size="lg" fullWidth loading={savingPw} onClick={() => void handlePasswordReset()}>
             Guardar contraseña
+          </Button>
+        </div>
+      </BottomSheet>
+
+      {/* Delete confirmation */}
+      <BottomSheet
+        open={showDeleteSheet}
+        onClose={() => !deleting && setShowDeleteSheet(false)}
+        height="auto"
+        title="Eliminar usuario"
+        draggable={!deleting}
+      >
+        <div className="al-form">
+          <p style={{ margin: "0 0 8px", color: "var(--text-2)", fontSize: 15, lineHeight: 1.5 }}>
+            ¿Eliminar a <strong>{deleteTarget?.name}</strong>?
+          </p>
+          <p style={{ margin: "0 0 24px", color: "var(--text-3)", fontSize: 13, lineHeight: 1.5 }}>
+            El usuario no podrá iniciar sesión, pero sus ventas anteriores se conservan en los informes y auditorías.
+          </p>
+          <Button variant="danger" size="lg" fullWidth loading={deleting} onClick={() => void handleDelete()}>
+            Sí, eliminar
+          </Button>
+          <Button variant="ghost" size="lg" fullWidth onClick={() => setShowDeleteSheet(false)}>
+            Cancelar
           </Button>
         </div>
       </BottomSheet>

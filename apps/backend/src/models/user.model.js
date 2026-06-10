@@ -15,12 +15,12 @@ const selectUser = `
 `;
 
 export const getUsersModel = async () => {
-  const result = await db.query(`${selectUser} ORDER BY u.id ASC`);
+  const result = await db.query(`${selectUser} WHERE u.deleted_at IS NULL ORDER BY u.id ASC`);
   return result.rows;
 };
 
 export const getUserByIdModel = async (id) => {
-  const result = await db.query(`${selectUser} WHERE u.id = ?`, [id]);
+  const result = await db.query(`${selectUser} WHERE u.id = ? AND u.deleted_at IS NULL`, [id]);
   return result.rows[0];
 };
 
@@ -29,7 +29,7 @@ export const findUserByUsername = async (username) => {
     `SELECT u.*, u.username AS email, r.name AS role_name
      FROM users u
      LEFT JOIN roles r ON r.id = u.role_id
-     WHERE LOWER(u.username) = LOWER(?)`,
+     WHERE LOWER(u.username) = LOWER(?) AND u.deleted_at IS NULL`,
     [username]
   );
   return result.rows[0];

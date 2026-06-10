@@ -40,7 +40,7 @@
     ],
     "win": {
       "target": [{ "target": "nsis", "arch": ["x64"] }],
-      "icon": "../pos-tablet/public/logo.png"
+      "icon": "../pos-tablet/public/logo.ico"
     },
     "nsis": {
       "oneClick": false,

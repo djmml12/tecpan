@@ -1,49 +1,23 @@
-// ── Paleta Tecpancito — espeja tokens.css del POS ────────────────────────────
-// Fuente de verdad: packages/ui-kit/src/tokens.css
+// ── Paleta y constantes de diseño para todos los PDFs ────────────────────────
 
 export const C = {
-  // Acento (mostaza) — --accent / --tecpan-yellow
-  orange:        "#E8A813",   // --accent
-  orangeLight:   "#FBE3A4",   // --accent-soft
-  orangeMuted:   "#FFF6D6",   // tint suave de accent-soft para fondos
-  orangeDeep:    "#B5810A",   // --accent-deep
-  accentInk:     "#2B1608",   // --accent-ink (texto sobre mostaza)
-
-  // Superficies crema — --bg-* / --tecpan-cream
-  bg:            "#F8F2DD",   // --bg-elev
-  bgSoft:        "#F4ECD8",   // --bg-soft / --tecpan-cream
-  bgDeeper:      "#DECFAE",   // --bg-deeper
-
-  // Texto marrón — --fg-*
-  text:          "#2B1608",   // --fg-1 / --tecpan-brown-dark
-  textMid:       "#5C4528",   // --fg-2
-  muted:         "#8A7456",   // --fg-3
-  subtle:        "#B0A180",   // --fg-4
-
-  // Sidebar / header oscuro
-  brownDark:     "#2B1608",   // --tecpan-brown-dark
-  cream:         "#F4ECD8",   // --tecpan-cream
-
-  // Borde
-  border:        "#E8DCBE",   // --tecpan-cream-deep
+  orange:        "#F0B017",
+  orangeLight:   "#FFE7A8",
+  orangeMuted:   "#F4ECD8",
+  text:          "#2B1608",
+  muted:         "#7A5C3A",
+  border:        "#E8DCBE",
+  bg:            "#FAF6EE",
   white:         "#FFFFFF",
-
-  // Estado crítico — --rec
-  critical:      "#B33A1F",
-  criticalBg:    "#F4C9BA",   // --rec-soft
-  criticalBorder:"#D9583A",
-
-  // Estado bajo — --warn
-  low:           "#D67A1A",   // --warn
-  lowBg:         "#FAD8AC",   // --warn-soft
-  lowBorder:     "#E89640",
-
-  // Estado ok — --ok
-  ok:            "#6A8E3F",
-  okBg:          "#D6E2B9",   // --ok-soft
-  okBorder:      "#9CB874",
-
-  // Extras (mantenidos por compatibilidad con stock-alert)
+  critical:      "#B91C1C",
+  criticalBg:    "#FEE2E2",
+  criticalBorder:"#FCA5A5",
+  low:           "#A16207",
+  lowBg:         "#FEF3C7",
+  lowBorder:     "#FCD34D",
+  ok:            "#166534",
+  okBg:          "#DCFCE7",
+  okBorder:      "#86EFAC",
   blue:          "#1D4ED8",
   blueBg:        "#DBEAFE",
   blueBorder:    "#93C5FD",

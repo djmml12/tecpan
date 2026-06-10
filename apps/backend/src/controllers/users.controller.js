@@ -2,6 +2,7 @@ import {
   getUsersService,
   createUserService,
   updateUserService,
+  deleteUserService,
 } from "../services/user.service.js";
 
 export const getUsers = async (req, res) => {
@@ -37,5 +38,17 @@ export const updateUser = async (req, res) => {
   } catch (error) {
     console.error("❌ Error actualizando usuario:", error.message);
     res.status(400).json({ message: error.message || "Error actualizando usuario" });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    await deleteUserService(id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Error eliminando usuario:", error.message);
+    res.status(400).json({ message: error.message || "Error eliminando usuario" });
   }
 };

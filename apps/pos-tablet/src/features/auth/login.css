@@ -366,46 +366,52 @@
   transform: scale(0.98);
 }
 
+/* ── Keyboard toggle (dentro del form) ─────────────────── */
+
+.lp-kb-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 18px;
+  background: var(--bg);
+  color: var(--fg-2);
+  border: 1.5px solid var(--border-strong, rgba(98, 70, 32, 0.26));
+  border-radius: var(--radius-md, 14px);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast, 120ms),
+    border-color var(--dur-fast, 120ms),
+    color var(--dur-fast, 120ms),
+    transform 100ms;
+  user-select: none;
+}
+
+.lp-kb-toggle:active { transform: scale(0.98); }
+
+.lp-kb-toggle--active {
+  background: #2B1608;
+  color: #F0B017;
+  border-color: #2B1608;
+}
+
+.tecpan-dark .lp-kb-toggle--active {
+  background: #F0B017;
+  color: #2B1608;
+  border-color: #F0B017;
+}
+
 /* ── Footer ────────────────────────────────────────────── */
 
 .lp-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 14px 22px 20px;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.lp-kb-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: #2B1608;
-  color: #F4ECD8;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: transform 140ms;
-}
-
-.tecpan-dark .lp-kb-btn {
-  background: #F4ECD8;
-  color: #2B1608;
-  border-color: rgba(43, 22, 8, 0.15);
-}
-
-.lp-kb-btn:hover { transform: translateY(-1px); }
-
-.lp-kb-btn--active {
-  background: var(--accent);
-  color: #2B1608;
+  justify-content: flex-end;
+  padding: 10px 22px 18px;
 }
 
 .lp-backend-url {

@@ -5,13 +5,13 @@ import { existsSync } from "fs";
 const __dir = dirname(fileURLToPath(import.meta.url));
 
 // Ruta al logo naranja (relativa a este archivo → raíz del repo)
-const LOGO_PATH = join(__dir, "../../../../../logos fenix/VERSIÓN-UN-SOLO-COLOR-NARANJA.png");
+const LOGO_PATH = join(__dir, "../../../../../apps/pos-tablet/public/icons/icon.svg");
 
 export const logoExists = existsSync(LOGO_PATH);
 
 /**
  * Dibuja el logo naranja en el documento pdfkit.
- * Si el archivo no existe, escribe "TECPANCITO" en naranja como fallback.
+ * Si el archivo no existe, escribe "TECPANCITO" en amarillo como fallback.
  *
  * @param {PDFDocument} doc
  * @param {number} x
@@ -28,12 +28,10 @@ export function drawLogo(doc, x, y, w, h) {
       // fallback a texto si la imagen falla
     }
   }
-  // Calcula tamaño que cabe en el ancho dado (Helvetica-Bold ≈ 0.63pt/char por pt de fontSize)
-  const fs = Math.min(Math.round(h * 0.7), Math.floor(w / 6.3));
   doc.save()
-     .fillColor("#E97316")
+     .fillColor("#F0B017")
      .font("Helvetica-Bold")
-     .fontSize(fs)
-     .text("TECPANCITO", x, y + (h - fs) * 0.5, { width: w, align: "left", lineBreak: false })
+     .fontSize(14)
+     .text("TECPANCITO", x, y + (h - 14) / 2, { width: w, align: "left", lineBreak: false })
      .restore();
 }

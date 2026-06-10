@@ -98,6 +98,11 @@ export const updateUserService = async (id, data) => {
 };
 
 export const deleteUserService = async (id) => {
-  await db.query(`DELETE FROM users WHERE id = ?`, [id]);
+  const existing = await getUserByIdModel(Number(id));
+  if (!existing) throw new Error("Usuario no encontrado");
+  await db.query(
+    `UPDATE users SET deleted_at = datetime('now'), is_active = 0 WHERE id = ?`,
+    [id]
+  );
   return { success: true };
 };

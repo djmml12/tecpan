@@ -63,16 +63,15 @@ export function buildDailySummaryMobileBuffer(summary, topHours = [], stock = {}
       doc.on("end",   () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
-      // ── Fondo crema ──────────────────────────────────────────────────────────
-      doc.save().rect(0, 0, W, pageH).fill(C.bgSoft).restore();
+      // ── Fondo blanco ─────────────────────────────────────────────────────────
+      doc.save().rect(0, 0, W, pageH).fill(C.white).restore();
 
       // ── Header compacto ──────────────────────────────────────────────────────
       const HDR_H = 42;
-      doc.save().rect(0, 0, W, HDR_H).fill(C.brownDark).restore();
-      doc.save().rect(0, HDR_H - 2, W, 2).fill(C.orange).restore();
+      doc.save().rect(0, 0, W, HDR_H).fill(C.orange).restore();
       doc.save()
-         .fillColor(C.orange).font("Helvetica-Bold").fontSize(11)
-         .text("TECPANCITO", PX, 13, { width: CW / 2, lineBreak: false })
+         .fillColor(C.white).font("Helvetica-Bold").fontSize(12)
+         .text("TECPANCITO", PX, 10, { width: CW / 2, lineBreak: false })
          .restore();
       doc.save()
          .fillColor(C.orangeLight).font("Helvetica").fontSize(11)

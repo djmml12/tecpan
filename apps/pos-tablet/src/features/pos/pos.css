@@ -285,8 +285,10 @@
 }
 
 .ps-product-name {
+  font-family: var(--font-display-active, var(--font-display));
   font-size: var(--name-size, 13px);
-  font-weight: 700;
+  font-weight: var(--display-weight, 700);
+  letter-spacing: var(--display-tracking, 0);
   line-height: 1.2;
   color: var(--fg-1);
   display: -webkit-box;
@@ -296,6 +298,7 @@
   text-wrap: balance;
 }
 .ps-product-price {
+  font-family: var(--font-display-active, var(--font-display));
   font-size: var(--price-size, 17px);
   font-weight: 800;
   color: var(--accent-deep);
@@ -523,8 +526,8 @@
   border: 2px solid var(--ok);
   color: var(--ok);
 }
-.ps-completed-title { font-size: 36px; font-weight: 900; color: var(--fg-1); margin: 0; }
-.ps-completed-amount { font-size: 28px; font-weight: 800; color: var(--accent-deep); margin: 0; }
+.ps-completed-title { font-family: var(--font-display-active, var(--font-display)); font-size: 36px; font-weight: var(--display-weight, 900); letter-spacing: var(--display-tracking, 0); color: var(--fg-1); margin: 0; }
+.ps-completed-amount { font-family: var(--font-display-active, var(--font-display)); font-size: 28px; font-weight: 800; color: var(--accent-deep); margin: 0; }
 .tecpan-dark .ps-completed-amount { color: var(--accent); }
 .ps-completed-ref { font-size: 16px; color: var(--fg-2); font-weight: 600; margin: -8px 0 0; }
 
@@ -565,8 +568,10 @@
 }
 .ps-orders-title {
   flex: 1;
+  font-family: var(--font-display-active, var(--font-display));
   font-size: 22px;
-  font-weight: 900;
+  font-weight: var(--display-weight, 900);
+  letter-spacing: var(--display-tracking, 0);
   color: var(--fg-1);
   margin: 0;
 }
@@ -741,7 +746,7 @@
   gap: 14px;
   padding: 18px 20px 10px;
 }
-.ps-paid-detail-title { font-size: 18px; font-weight: 800; color: var(--fg-1); }
+.ps-paid-detail-title { font-family: var(--font-display-active, var(--font-display)); font-size: 18px; font-weight: 800; color: var(--fg-1); }
 .ps-paid-detail-time { font-size: 12px; color: var(--fg-3); margin-top: 2px; }
 .ps-paid-detail-items {
   flex: 1;
