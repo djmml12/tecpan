@@ -1790,6 +1790,7 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
                           placeholder="Ej: sin cebolla..."
                           value={item.notes || ""}
                           onChange={(e) => setItemNotes(item.productId, e.target.value)}
+                          onFocus={() => { if (touchKeyboardEnabled) setShowKeyboard(true); }}
                           onBlur={() => setEditingItemNotesId(null)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === "Escape") {
@@ -1833,6 +1834,7 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
                 placeholder="Ej: mesa 5, alérgico..."
                 value={orderNotes}
                 onChange={(e) => setOrderNotes(e.target.value)}
+                onFocus={() => { if (touchKeyboardEnabled) setShowKeyboard(true); }}
                 rows={2}
                 style={{
                   width: "100%",
