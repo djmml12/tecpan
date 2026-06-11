@@ -11,6 +11,7 @@ import PrinterManager      from "../features/admin/PrinterManager";
 import EmailReportsManager from "../features/admin/EmailReportsManager";
 import KeyboardManager     from "../features/admin/KeyboardManager";
 import OrderNamingManager  from "../features/admin/OrderNamingManager";
+import DisplayManager      from "../features/admin/DisplayManager";
 import ReporteInventario   from "../features/reports/ReporteInventario";
 import ReporteBodega       from "../features/reports/ReporteBodega";
 import ReorderOverlay      from "../features/pos/ReorderOverlay";
@@ -18,7 +19,7 @@ import "./admin.css";
 
 /* ── Types ────────────────────────────────────────────────── */
 
-type AdminView = "inventory" | "bodega" | "dashboard" | "staff" | "tips" | "printer" | "email" | "keyboard" | "order-naming" | "report-inventory" | "report-bodega" | "reorder";
+type AdminView = "inventory" | "bodega" | "dashboard" | "staff" | "tips" | "printer" | "email" | "keyboard" | "order-naming" | "display" | "report-inventory" | "report-bodega" | "reorder";
 
 interface Props {
   role:        string;
@@ -133,6 +134,16 @@ function OrderNamingIcon() {
   );
 }
 
+function DisplayIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </svg>
+  );
+}
+
 function SortIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -239,6 +250,7 @@ export default function AdminLayout({ role, onBackToPos, onLogout }: Props) {
           {navItem("email",     "Email",           <EmailIcon />,     true)}
           {navItem("keyboard",      "Teclado virtual",    <KeyboardIcon />,      true)}
           {navItem("order-naming",  "Config. Órdenes",    <OrderNamingIcon />,    true)}
+          {navItem("display",       "Pantalla y escala",  <DisplayIcon />,        true)}
           {navItem("reorder",       "Ordenar",            <SortIcon />,           true)}
 
           {keyboardEnabled && (
@@ -291,6 +303,7 @@ export default function AdminLayout({ role, onBackToPos, onLogout }: Props) {
           />
         )}
         {safeView === "order-naming" && canAdmin && <OrderNamingManager />}
+        {safeView === "display"      && canAdmin && <DisplayManager />}
         {safeView === "reorder"      && canAdmin && (
           <ReorderOverlay onClose={() => setView("inventory")} />
         )}
