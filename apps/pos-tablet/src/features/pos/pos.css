@@ -867,3 +867,65 @@
 }
 .ps-ref-input:focus { outline: none; border-color: var(--accent); }
 .ps-ref-input::placeholder { color: var(--fg-4); }
+
+/* ─── COMPOSER FLOTANTE DE NOTA (encima del teclado táctil) ──── */
+.ps-note-composer {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--keyboard-height, 0px) + 8px);
+  z-index: 1000;
+  width: min(560px, calc(100vw - 24px));
+  transform: translateX(-50%);
+  padding: 10px 14px;
+  background: var(--bg-elev);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 24px var(--sh-dark);
+  pointer-events: none; /* no roba foco ni intercepta toques */
+  will-change: transform, opacity;
+  animation: ps-note-pop 160ms var(--ease, ease) both;
+}
+
+@keyframes ps-note-pop {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.ps-note-composer-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-deep);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tecpan-dark .ps-note-composer-label { color: var(--accent); }
+
+.ps-note-composer-text {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--fg-1);
+  word-break: break-word;
+}
+.ps-note-composer-ph { color: var(--fg-4); }
+
+.ps-note-composer-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 2px;
+  background: var(--accent);
+  vertical-align: text-bottom;
+  animation: ps-note-caret 1s steps(1) infinite;
+}
+
+@keyframes ps-note-caret {
+  0%, 50%  { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}

@@ -330,6 +330,9 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
   const [touchKeyboardEnabled, setTouchKeyboardEnabled] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
 
+  /* Nota activa: para el composer flotante encima del teclado táctil */
+  const [activeNote, setActiveNote] = useState<{ kind: "item"; productId: number } | { kind: "order" } | null>(null);
+
   /* Order naming setting */
   const [orderAutoName, setOrderAutoName] = useState(true);
   const [quickOrdersEnabled, setQuickOrdersEnabled] = useState(false);
@@ -1790,8 +1793,11 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
                           placeholder="Ej: sin cebolla..."
                           value={item.notes || ""}
                           onChange={(e) => setItemNotes(item.productId, e.target.value)}
-                          onFocus={() => { if (touchKeyboardEnabled) setShowKeyboard(true); }}
-                          onBlur={() => setEditingItemNotesId(null)}
+                          onFocus={() => {
+                            setActiveNote({ kind: "item", productId: item.productId });
+                            if (touchKeyboardEnabled) setShowKeyboard(true);
+                          }}
+                          onBlur={() => { setEditingItemNotesId(null); setActiveNote(null); }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === "Escape") {
                               setEditingItemNotesId(null);
@@ -1834,7 +1840,11 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
                 placeholder="Ej: mesa 5, alérgico..."
                 value={orderNotes}
                 onChange={(e) => setOrderNotes(e.target.value)}
-                onFocus={() => { if (touchKeyboardEnabled) setShowKeyboard(true); }}
+                onFocus={() => {
+                  setActiveNote({ kind: "order" });
+                  if (touchKeyboardEnabled) setShowKeyboard(true);
+                }}
+                onBlur={() => setActiveNote(null)}
                 rows={2}
                 style={{
                   width: "100%",
@@ -2014,6 +2024,27 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
           />
         </Suspense>
       )}
+
+      {/* ── Composer flotante de nota (encima del teclado) ─── */}
+      {showKeyboard && activeNote && (() => {
+        const itemRef = activeNote.kind === "item"
+          ? cart.find(i => i.productId === activeNote.productId)
+          : null;
+        const value = activeNote.kind === "item" ? (itemRef?.notes ?? "") : orderNotes;
+        const label = activeNote.kind === "item" ? `Nota · ${itemRef?.name ?? "ítem"}` : "Nota general";
+        const placeholder = activeNote.kind === "item" ? "Ej: sin cebolla..." : "Ej: mesa 5, alérgico...";
+        return (
+          <div className="ps-note-composer" aria-hidden="true">
+            <div className="ps-note-composer-label">{label}</div>
+            <div className="ps-note-composer-text">
+              {value
+                ? <span className="ps-note-composer-val">{value}</span>
+                : <span className="ps-note-composer-ph">{placeholder}</span>}
+              <span className="ps-note-composer-caret" />
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Virtual keyboard ─────────────────────────── */}
       <TouchKeyboard open={showKeyboard} onClose={() => setShowKeyboard(false)} />
