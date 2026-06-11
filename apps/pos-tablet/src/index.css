@@ -19,6 +19,24 @@ body,
   height: 100%;
   width: 100%;
   min-height: 100dvh;
+  /* El .tecpan se agranda inverso a la escala; recortamos el desborde
+     del box de layout (el transform lo reduce a tamaño de viewport). */
+  overflow: hidden;
+}
+
+/* ── Escala de render del POS (--ui-scale, ver services/displayScale) ──
+   El lienzo se dimensiona a 100/escala y luego se reduce con scale(),
+   así llena la pantalla completa mientras la interfaz cambia de tamaño.
+   Debe ir DESPUÉS del @import de tokens.css para pisar width/height. */
+:root {
+  --ui-scale: 1;
+}
+
+.tecpan {
+  width: calc(100vw / var(--ui-scale, 1));
+  height: calc(100vh / var(--ui-scale, 1));
+  transform: scale(var(--ui-scale, 1));
+  transform-origin: 0 0;
 }
 
 html {

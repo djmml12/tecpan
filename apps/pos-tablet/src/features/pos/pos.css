@@ -14,7 +14,7 @@
 
 /* ─── SIDEBAR ────────────────────────────────────────────────── */
 .ps-sidebar {
-  height: 100vh;
+  height: 100%;
   padding: 14px 10px;
   display: flex;
   flex-direction: column;

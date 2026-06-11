@@ -4,7 +4,7 @@
 
 .lp-shell {
   position: relative;
-  min-height: 100dvh;
+  min-height: 100%;
   width: 100%;
   display: flex;
   flex-direction: row;

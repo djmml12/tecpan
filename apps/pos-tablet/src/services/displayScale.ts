@@ -35,11 +35,12 @@ export const getScale = (): number => {
   }
 };
 
-/** Aplica la escala al DOM. */
+/** Aplica la escala al DOM mediante la variable CSS `--ui-scale`.
+    El `.tecpan` se dimensiona inverso a la escala y se reduce con
+    `transform: scale()`, de modo que SIEMPRE llena el viewport pero
+    su contenido se renderiza más grande o más pequeño. */
 export const applyScale = (scale: number): void => {
-  // `zoom` no está tipado en CSSStyleDeclaration estándar.
-  (document.documentElement.style as unknown as Record<string, string>).zoom =
-    String(clampScale(scale));
+  document.documentElement.style.setProperty("--ui-scale", String(clampScale(scale)));
 };
 
 const listeners = new Set<() => void>();
