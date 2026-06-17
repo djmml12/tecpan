@@ -55,6 +55,9 @@ interface OpenTicket {
   cart: CartItem[];
   notes: string;
   createdAt: number;
+  kitchenSentAt?: number;
+  barSentAt?: number;
+  kitchenSentCart?: CartItem[];
 }
 
 const OPEN_TICKETS_KEY = "pos_open_tickets_v1";
@@ -297,6 +300,7 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
 
   /* Print */
   const [printLoading, setPrintLoading] = useState(false);
+  const [printerMode, setPrinterMode] = useState<"single" | "dual">("single");
 
   /* Paid orders history */
   const [paidOrders, setPaidOrders] = useState<PaidSale[]>([]);
@@ -308,6 +312,7 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
 
   /* Animations */
   const [flashId, setFlashId] = useState<number | null>(null);
+  const [newOrderFlash, setNewOrderFlash] = useState(false);
 
   /* Pull-to-refresh on product grid */
   const { containerRef: gridRef, pulling: gridPulling, progress: pullProgress } =
@@ -517,6 +522,14 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
         }
       })
       .catch(() => {});
+    apiRequest("/settings/printer-mode")
+      .then((r: unknown) => {
+        const mode = (r as Record<string, unknown>)?.data as Record<string, unknown> | undefined;
+        if (mountedRef.current && (mode?.mode === "single" || mode?.mode === "dual")) {
+          setPrinterMode(mode.mode as "single" | "dual");
+        }
+      })
+      .catch(() => {});
     return () => { mountedRef.current = false; };
   }, [loadProducts, loadCategories]);
 
@@ -592,13 +605,13 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
     return () => window.clearTimeout(id);
   }, [cart, orderNotes, activeTicketId, orderAutoName]);
 
-  /* Cerrar sheet de nombre si el carrito queda vacío */
+  /* Cerrar sheet de nombre si el carrito queda vacío y ya hay un ticket activo */
   useEffect(() => {
-    if (cart.length === 0) {
+    if (cart.length === 0 && activeTicketId) {
       setShowNameSheet(false);
       setPendingName("");
     }
-  }, [cart.length]);
+  }, [cart.length, activeTicketId]);
 
   /* Cambió el contenido del carrito → es otra venta lógica → invalidar idempotencia */
   useEffect(() => {
@@ -992,6 +1005,11 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
   const handleNewOrder = () => {
     clearCart();
     setScreen("pos");
+    setNewOrderFlash(true);
+    window.setTimeout(() => setNewOrderFlash(false), 600);
+    if (!orderAutoName) {
+      setShowNameSheet(true);
+    }
   };
 
   const handleCreateNamedOrder = (nameOverride?: string) => {
@@ -1001,6 +1019,21 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
     setActiveTicketId(newId);
     setShowNameSheet(false);
     setPendingName("");
+  };
+
+  const handleSaveQuickName = async () => {
+    const name = pendingName.trim();
+    if (!name || quickNames.includes(name)) return;
+    const updated = [...quickNames, name];
+    setQuickNames(updated);
+    try {
+      await apiRequest("/settings/order-naming", {
+        method: "PUT",
+        body: JSON.stringify({ quickNames: updated, quickOrdersEnabled: true }),
+      });
+    } catch {
+      setQuickNames(quickNames);
+    }
   };
 
   const handlePay = async ({ noTip = false }: { noTip?: boolean } = {}) => {
@@ -1076,6 +1109,7 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
     items: CartItem[],
     notes: string,
     reference?: string,
+    ticketId?: string,
   ) => {
     if (items.length === 0) return;
     setPrintLoading(true);
@@ -1101,6 +1135,19 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
           : targets[0] === "kitchen"       ? "Ticket enviado a cocina"
           :                                  "Ticket enviado a barra";
         show(label, { type: "success" });
+
+        if (ticketId) {
+          const now = Date.now();
+          setOpenTickets(prev => prev.map(t => {
+            if (t.id !== ticketId) return t;
+            return {
+              ...t,
+              kitchenSentAt:   targets.includes("kitchen") ? now : t.kitchenSentAt,
+              barSentAt:       targets.includes("bar")     ? now : t.barSentAt,
+              kitchenSentCart: targets.includes("kitchen") ? items : t.kitchenSentCart,
+            };
+          }));
+        }
       } else {
         throw new Error(response?.message || "Error desconocido");
       }
@@ -1157,8 +1204,8 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
         <h1 className="ps-completed-title">¡Cobrado!</h1>
         <p className="ps-completed-amount">{fmt(completedTotal)}</p>
         {completedRef && <p className="ps-completed-ref">{completedRef}</p>}
-        <Button variant="primary" size="xl" onClick={handleNewOrder}>
-          Nueva venta
+        <Button variant="primary" size="xl" onClick={() => setScreen("pos")}>
+          Ir al inicio
         </Button>
         {completedSaleId != null && (
           <Button
@@ -1172,7 +1219,7 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
             </span>
           </Button>
         )}
-        <Button variant="ghost" size="md" onClick={() => { handleNewOrder(); setScreen("orders"); }}>
+        <Button variant="secondary" size="md" onClick={() => { handleNewOrder(); setScreen("orders"); }}>
           Ver órdenes
         </Button>
       </div>
@@ -1187,9 +1234,9 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
       <>
       <div className="ps-orders-overlay">
         <div className="ps-orders-header">
-          <button className="ps-icon-btn" onClick={() => setScreen("pos")} aria-label="Volver al POS">
-            <BackIcon />
-          </button>
+          <Button variant="primary" size="md" onClick={() => setScreen("pos")}>
+            Ir al inicio
+          </Button>
           <h1 className="ps-orders-title">Órdenes</h1>
           <Button variant="primary" size="md" onClick={handleNewOrder}>
             + Nueva venta
@@ -1215,28 +1262,51 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
                           {itemsCount} ítems · {new Date(ticket.createdAt).toLocaleTimeString("es-GT", { timeStyle: "short" })}
                         </div>
                       </div>
+                      {ticket.kitchenSentAt && (
+                        <div className="ps-order-kitchen-status">
+                          <span className="ps-order-kitchen-dot" />
+                          En preparación
+                        </div>
+                      )}
                       <div className="ps-order-card-actions" onClick={(e) => e.stopPropagation()}>
                         <button
-                          className="ps-order-action-btn ps-order-action-btn--kitchen"
-                          onClick={(e) => { e.stopPropagation(); void sendKitchenTicket(['kitchen'], ticket.cart, ticket.notes, ticket.label); }}
+                          className={`ps-order-action-btn ps-order-action-btn--kitchen${ticket.kitchenSentAt ? " ps-order-action-btn--sent-kitchen" : ""}`}
+                          onClick={(e) => { e.stopPropagation(); void sendKitchenTicket(['kitchen'], ticket.cart, ticket.notes, ticket.label, ticket.id); }}
                           disabled={printLoading}
+                          title={ticket.kitchenSentAt ? `Enviado ${new Date(ticket.kitchenSentAt).toLocaleTimeString("es-GT", { timeStyle: "short" })}` : undefined}
                         >
-                          Cocina
+                          {ticket.kitchenSentAt ? "✓ Cocina" : "Cocina"}
                         </button>
-                        <button
-                          className="ps-order-action-btn ps-order-action-btn--bar"
-                          onClick={(e) => { e.stopPropagation(); void sendKitchenTicket(['bar'], ticket.cart, ticket.notes, ticket.label); }}
-                          disabled={printLoading}
-                        >
-                          Barra
-                        </button>
-                        <button
-                          className="ps-order-action-btn ps-order-action-btn--both"
-                          onClick={(e) => { e.stopPropagation(); void sendKitchenTicket(['kitchen', 'bar'], ticket.cart, ticket.notes, ticket.label); }}
-                          disabled={printLoading}
-                        >
-                          Ambos
-                        </button>
+                        {(() => {
+                          if (!ticket.kitchenSentAt || !ticket.kitchenSentCart) return null;
+                          const sentMap: Record<number, number> = {};
+                          for (const i of ticket.kitchenSentCart) sentMap[i.productId] = (sentMap[i.productId] ?? 0) + i.quantity;
+                          const deltaItems = ticket.cart.flatMap(i => {
+                            const diff = i.quantity - (sentMap[i.productId] ?? 0);
+                            return diff > 0 ? [{ ...i, quantity: diff }] : [];
+                          });
+                          if (deltaItems.length === 0) return null;
+                          return (
+                            <button
+                              className="ps-order-action-btn ps-order-action-btn--update"
+                              onClick={(e) => { e.stopPropagation(); void sendKitchenTicket(['kitchen'], deltaItems, ticket.notes, `${ticket.label} (actualización)`, ticket.id); }}
+                              disabled={printLoading}
+                              title="Imprimir artículos nuevos a cocina"
+                            >
+                              Actualizar pedido
+                            </button>
+                          );
+                        })()}
+                        {printerMode === "dual" && (
+                          <button
+                            className={`ps-order-action-btn ps-order-action-btn--bar${ticket.barSentAt ? " ps-order-action-btn--sent-bar" : ""}`}
+                            onClick={(e) => { e.stopPropagation(); void sendKitchenTicket(['bar'], ticket.cart, ticket.notes, ticket.label, ticket.id); }}
+                            disabled={printLoading}
+                            title={ticket.barSentAt ? `Enviado ${new Date(ticket.barSentAt).toLocaleTimeString("es-GT", { timeStyle: "short" })}` : undefined}
+                          >
+                            {ticket.barSentAt ? "✓ Barra" : "Barra"}
+                          </button>
+                        )}
                         <button
                           className="ps-order-action-btn ps-order-action-btn--delete"
                           onClick={(e) => { e.stopPropagation(); deleteTicket(ticket.id); }}
@@ -1398,7 +1468,7 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
           </div>
 
           <button
-            className="ps-sidebar-btn ps-sidebar-btn--new-order"
+            className={`ps-sidebar-btn ps-sidebar-btn--new-order${newOrderFlash ? " ps-sidebar-btn--new-order-flash" : ""}`}
             onClick={handleNewOrder}
             aria-label="Nueva orden"
           >
@@ -2009,6 +2079,7 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
             onClose={() => setShowSplitSheet(false)}
             cart={cart}
             cartTotal={cartTotal}
+            tipPercentage={tipPercentage}
             onAllPaid={(saleId) => {
               setCompletedSaleId(saleId);
               setCompletedTotal(cartTotal);
@@ -2072,15 +2143,25 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
             </div>
           )}
 
-          <input
-            className="ps-ref-input"
-            placeholder="Ej: Mesa 5, Juan…"
-            value={pendingName}
-            onChange={e => setPendingName(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter") handleCreateNamedOrder(); }}
-            autoFocus
-            autoComplete="off"
-          />
+          <div className="ps-ref-input-row">
+            <input
+              className="ps-ref-input"
+              placeholder="Ej: Mesa 5, Juan…"
+              value={pendingName}
+              onChange={e => setPendingName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleCreateNamedOrder(); }}
+              autoFocus
+              autoComplete="off"
+            />
+            <button
+              className="ps-save-quick-btn"
+              onClick={handleSaveQuickName}
+              disabled={!pendingName.trim() || quickNames.includes(pendingName.trim())}
+              title="Guardar como acceso rápido"
+            >
+              ★
+            </button>
+          </div>
           <Button variant="primary" size="lg" fullWidth onClick={() => handleCreateNamedOrder()}>
             Confirmar
           </Button>
