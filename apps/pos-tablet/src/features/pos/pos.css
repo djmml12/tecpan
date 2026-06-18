@@ -643,7 +643,14 @@
   align-items: center;
   gap: 12px;
 }
-.ps-order-info { flex: 1; min-width: 0; }
+.ps-order-info { min-width: 0; }
+.ps-kitchen-sent-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 120px;
+}
 .ps-order-ref {
   font-size: 16px;
   font-weight: 800;
@@ -662,66 +669,82 @@
   justify-content: flex-end;
 }
 .ps-order-action-btn {
-  padding: 6px 12px;
-  border: 1px solid var(--border-strong);
+  padding: 10px 18px;
+  border: 2px solid transparent;
   border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
   cursor: pointer;
   transition: all 140ms;
-  background: var(--bg-elev);
-  color: var(--fg-2);
+  min-width: 76px;
+  white-space: nowrap;
 }
-.ps-order-action-btn:hover { color: var(--fg-1); border-color: var(--fg-3); }
 .ps-order-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.ps-order-action-btn--kitchen { color: var(--ok); }
-.ps-order-action-btn--kitchen:hover { background: var(--ok-soft); border-color: var(--ok); }
-.ps-order-action-btn--bar { color: var(--accent-deep); }
-.ps-order-action-btn--bar:hover { background: var(--accent-soft); border-color: var(--accent); }
-.tecpan-dark .ps-order-action-btn--bar { color: var(--accent); }
-.ps-order-action-btn--both { color: var(--warn); }
-.ps-order-action-btn--both:hover { background: var(--warn-soft); border-color: var(--warn); }
-.ps-order-action-btn--delete { color: var(--rec); }
-.ps-order-action-btn--delete:hover { background: var(--rec-soft); border-color: var(--rec); }
-.ps-order-action-btn--sent-kitchen {
-  background: var(--ok-soft);
-  border-color: var(--ok);
-  color: var(--ok);
+.ps-order-action-btn--kitchen {
+  background: #D4E6A0;
+  border-color: #7A9830;
+  color: #4A6618;
 }
-.ps-order-action-btn--sent-kitchen:hover { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
-.ps-order-action-btn--sent-bar {
+.ps-order-action-btn--kitchen:not(:disabled):hover { background: #C4D888; border-color: #607820; }
+.tecpan-dark .ps-order-action-btn--kitchen {
+  background: rgba(122, 152, 48, 0.22);
+  border-color: #9CB874;
+  color: #B8D490;
+}
+.ps-order-action-btn--bar {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent-deep);
 }
-.tecpan-dark .ps-order-action-btn--sent-bar { color: var(--accent); }
-.ps-order-action-btn--sent-bar:hover { background: var(--accent-soft); border-color: var(--accent); }
-.ps-order-action-btn--update { color: var(--warn, #B45309); }
-.ps-order-action-btn--update:hover { background: var(--warn-soft, #FEF3C7); border-color: var(--warn, #B45309); }
+.tecpan-dark .ps-order-action-btn--bar { color: var(--accent); }
+.ps-order-action-btn--bar:not(:disabled):hover { filter: brightness(0.92); }
+.ps-order-action-btn--delete {
+  background: #EEC4A8;
+  border-color: #A03828;
+  color: #7A2810;
+}
+.ps-order-action-btn--delete:not(:disabled):hover { background: #E0AA8C; border-color: #7A2810; }
+.tecpan-dark .ps-order-action-btn--delete {
+  background: rgba(160, 56, 40, 0.22);
+  border-color: #D9583A;
+  color: #EE8868;
+}
+.ps-order-action-btn--update {
+  background: #FDF0CC;
+  border-color: #C8960A;
+  color: #8A6200;
+  animation: ps-update-pulse 1.8s ease-in-out infinite;
+}
+.ps-order-action-btn--update:not(:disabled):hover { background: #F5E09A; border-color: #9A7000; }
+.tecpan-dark .ps-order-action-btn--update {
+  background: rgba(200, 150, 10, 0.18);
+  border-color: #D4A820;
+  color: #E8C840;
+}
+@keyframes ps-update-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200, 150, 10, 0.0); }
+  50%       { box-shadow: 0 0 0 4px rgba(200, 150, 10, 0.35); }
+}
 
-.ps-order-kitchen-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.ps-kitchen-sent-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: #D4E6A0;
+  border: 1.5px solid #7A9830;
+  color: #4A6618;
   font-size: 12px;
-  font-weight: 700;
-  color: var(--ok, #22863a);
+  font-weight: 800;
   white-space: nowrap;
-  flex-shrink: 0;
+  text-align: center;
 }
-.ps-order-kitchen-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ok, #22863a);
-  animation: ps-kitchen-pulse 1.6s ease-in-out infinite;
-  flex-shrink: 0;
+.tecpan-dark .ps-kitchen-sent-badge {
+  background: rgba(122, 152, 48, 0.22);
+  border-color: #9CB874;
+  color: #B8D490;
 }
-@keyframes ps-kitchen-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
-}
+
 
 .ps-order-total { font-size: 16px; font-weight: 800; color: var(--fg-1); white-space: nowrap; }
 .ps-order-chevron { color: var(--fg-4); display: flex; align-items: center; }

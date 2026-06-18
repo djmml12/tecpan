@@ -1,25 +1,27 @@
 /* ──────────────────────────────────────────
-   TouchKeyboard — iOS-style, anchored bottom
+   TouchKeyboard — centrado, ancho restringido
    ────────────────────────────────────────── */
 
 .uk-kb {
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  width: min(700px, 98vw);
   z-index: 1100;
-  background: var(--bg-deeper, #ece7e1);
-  border-top: 1.5px solid var(--border-strong, rgba(98, 70, 32, 0.26));
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 
-  transform: translateY(100%);
-  transition: transform var(--dur-slow) var(--ease);
+  background: #f0ebe3;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: none;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18), 0 -2px 8px rgba(0, 0, 0, 0.08);
 
+  transition: transform var(--dur-slow, 280ms) var(--ease, cubic-bezier(.3,.7,.4,1));
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .uk-kb--open {
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0);
 }
 
 /* ── Top bar ────────────────────────────── */
@@ -28,29 +30,29 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  padding: var(--space-2) var(--space-4) 0;
+  padding: 10px 16px 4px;
   min-height: 36px;
 }
 
 .uk-kb-handle {
-  width: 44px;
-  height: 5px;
-  border-radius: var(--radius-pill);
-  background: var(--border-strong, rgba(98, 70, 32, 0.26));
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
 }
 
 .uk-kb-close-btn {
   position: absolute;
-  right: var(--space-4);
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--danger, #B33A1F);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--danger, #B33A1F);
-  font-size: 15px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+  font-size: 13px;
   font-weight: 900;
   cursor: pointer;
   display: flex;
@@ -58,25 +60,28 @@
   justify-content: center;
   touch-action: manipulation;
   line-height: 1;
-  transition: background var(--dur-fast) var(--ease);
+  transition: background var(--dur-fast, 120ms);
 }
 
 .uk-kb-close-btn:active {
-  background: var(--danger-bg, rgba(179, 58, 31, 0.12));
+  background: rgba(220, 38, 38, 0.28);
+  color: #b91c1c;
 }
 
 /* ── Key rows ───────────────────────────── */
 .uk-kb-rows {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: var(--space-2) var(--space-3) var(--space-4);
+  gap: 6px;
+  padding: 6px 10px 12px;
+  background: #e8e0d4;
+  border-radius: 0 0 0 0;
 }
 
 .uk-kb-row {
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 /* ── Individual key ─────────────────────── */
@@ -89,14 +94,16 @@
   justify-content: center;
 
   font-family: inherit;
-  font-size: var(--text-lg);
+  font-size: 16px;
   font-weight: 700;
-  color: var(--text-1);
+  color: #2b1a08;
   text-transform: lowercase;
 
-  background: var(--bg-elev, #faf7f3);
-  border: 1px solid var(--border-strong, rgba(98, 70, 32, 0.22));
-  border-radius: var(--radius-sm);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  box-shadow: none;
 
   cursor: pointer;
   touch-action: manipulation;
@@ -104,36 +111,64 @@
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
 
-  transition:
-    transform  var(--dur-fast) var(--ease),
-    background var(--dur-fast) var(--ease);
+  transition: transform 80ms, background 80ms;
 }
 
 .uk-kb-key:active {
   transform: scale(0.88);
-  background: var(--bg-deeper, var(--surface-2));
+  background: #e8e0d4;
+  border-bottom-width: 1px;
 }
 
-/* Action keys (⌫, ⏎) */
+/* Acción base (⌫, ⏎) */
 .uk-kb-key--action {
   max-width: 84px;
-  font-size: var(--text-md);
-  background: var(--bg-deeper, #ddd7cf);
-  color: var(--text-2);
-  border-color: var(--border-strong, rgba(98, 70, 32, 0.22));
-}
-.uk-kb-key--action:active {
-  background: var(--bg, #EDE3CA);
+  font-size: 18px;
+  background: #d6ccbe;
+  color: #4a3820;
+  border-color: rgba(0, 0, 0, 0.1);
+  border-bottom-color: rgba(0, 0, 0, 0.22);
 }
 
-/* Space bar */
+.uk-kb-key--action:active {
+  background: #c4bab0;
+}
+
+/* Borrar — naranja */
+.uk-kb-key--backspace {
+  background: #fff0e6;
+  color: #c2500a;
+  border-color: rgba(194, 80, 10, 0.18);
+  border-bottom-color: rgba(194, 80, 10, 0.32);
+}
+
+.uk-kb-key--backspace:active {
+  background: #fddcc8;
+  color: #9a3d06;
+}
+
+/* Enter — gris */
+.uk-kb-key--enter {
+  background: #f0eff0;
+  color: #6b7280;
+  border-color: rgba(0, 0, 0, 0.1);
+  border-bottom-color: rgba(0, 0, 0, 0.2);
+}
+
+.uk-kb-key--enter:active {
+  background: #dde0e3;
+  color: #374151;
+}
+
+/* Espacio */
 .uk-kb-row--actions .uk-kb-key--space {
   flex: 3;
   max-width: none;
-  font-size: var(--text-xs);
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--text-2);
-  background: var(--bg-deeper, #ddd7cf);
-  border-color: var(--border-strong, rgba(98, 70, 32, 0.22));
+  color: #6b5a3a;
+  background: #d6ccbe;
+  border-color: rgba(0, 0, 0, 0.1);
+  border-bottom-color: rgba(0, 0, 0, 0.22);
 }

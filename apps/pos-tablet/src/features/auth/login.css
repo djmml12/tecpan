@@ -4,16 +4,11 @@
 
 .lp-shell {
   position: relative;
-  min-height: 100%;
+  min-height: 100dvh;
   width: 100%;
   display: flex;
   flex-direction: row;
   overflow: hidden;
-}
-
-.lp-shell--kb-open {
-  padding-bottom: 420px;
-  overflow-y: auto;
 }
 
 /* ── LEFT: Brand showcase ──────────────────────────────── */
@@ -420,6 +415,182 @@
   font-family: ui-monospace, "Cascadia Code", monospace;
   letter-spacing: 0.04em;
   user-select: none;
+}
+
+/* ── Teclado flotante compacto (solo login) ────────────── */
+
+.lp-float-kb {
+  position: fixed;
+  left: 20px;
+  bottom: 24px;
+  width: min(440px, calc(52vw - 44px));
+  z-index: 300;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(14px) scale(0.97);
+  transition:
+    opacity 200ms var(--ease, cubic-bezier(.3,.7,.4,1)),
+    transform 200ms var(--ease, cubic-bezier(.3,.7,.4,1));
+  will-change: transform, opacity;
+}
+
+.lp-float-kb--open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.lp-float-kb-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 6px;
+  border-radius: 14px 14px 0 0;
+  background: #f0ebe3;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.lp-float-kb-header--drag {
+  cursor: grab;
+  touch-action: none;
+}
+
+.lp-float-kb-header--drag:active {
+  cursor: grabbing;
+}
+
+.lp-float-kb-drag-handle {
+  font-size: 14px;
+  color: rgba(100, 80, 40, 0.4);
+  line-height: 1;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.lp-float-kb-title {
+  flex: 1;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #7a5a1e;
+  pointer-events: none;
+}
+
+.lp-float-kb-close {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 7px;
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  touch-action: manipulation;
+}
+
+.lp-float-kb-close:active {
+  background: rgba(220, 38, 38, 0.28);
+  color: #b91c1c;
+}
+
+.lp-float-kb-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 8px 10px;
+  background: #e8e0d4;
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.lp-float-kb-row {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.lp-float-kb-key {
+  flex: 1;
+  max-width: 42px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #2b1a08;
+  text-transform: lowercase;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.2);
+  border-radius: 7px;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 80ms, background 80ms;
+}
+
+.lp-float-kb-key:active {
+  transform: scale(0.88);
+  background: #e8e0d4;
+  border-bottom-width: 1px;
+}
+
+.lp-float-kb-key--action {
+  max-width: 56px;
+  font-size: 15px;
+  background: #d6ccbe;
+  color: #4a3820;
+  border-bottom-color: rgba(0, 0, 0, 0.22);
+}
+
+.lp-float-kb-key--action:active {
+  background: #c4bab0;
+}
+
+.lp-float-kb-key--backspace {
+  background: #fff0e6;
+  color: #c2500a;
+  border-color: rgba(194, 80, 10, 0.2);
+  border-bottom-color: rgba(194, 80, 10, 0.35);
+}
+
+.lp-float-kb-key--backspace:active {
+  background: #fddcc8;
+  color: #9a3d06;
+}
+
+.lp-float-kb-key--enter {
+  background: #f0eff0;
+  color: #6b7280;
+  border-color: rgba(0, 0, 0, 0.1);
+  border-bottom-color: rgba(0, 0, 0, 0.2);
+}
+
+.lp-float-kb-key--enter:active {
+  background: #dde0e3;
+  color: #374151;
+}
+
+.lp-float-kb-row--actions .lp-float-kb-key--space {
+  flex: 3;
+  max-width: none;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b5a3a;
+  background: #d6ccbe;
+  border-color: rgba(0, 0, 0, 0.1);
+  border-bottom-color: rgba(0, 0, 0, 0.22);
 }
 
 /* ── Animation ─────────────────────────────────────────── */

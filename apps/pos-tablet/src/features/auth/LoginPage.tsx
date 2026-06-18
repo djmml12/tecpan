@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { Button, TouchKeyboard } from "@pos/ui-kit";
+import { useEffect, useState } from "react";
+import { Button } from "@pos/ui-kit";
+import { LoginKeyboard } from "./LoginKeyboard";
 import { apiRequest, getBackendBaseUrl } from "../../services/api";
 import { useAuth } from "@pos/auth";
 import type { AuthUser } from "@pos/types";
@@ -73,8 +74,6 @@ export default function LoginPage() {
   const [clockTime,    setClockTime]    = useState("");
   const [clockDate,    setClockDate]    = useState("");
 
-  const formRef = useRef<HTMLDivElement>(null);
-
   /* Clock tick */
   useEffect(() => {
     const tick = () => {
@@ -90,14 +89,6 @@ export default function LoginPage() {
   useEffect(() => {
     getBackendBaseUrl().then(url => { if (url) setBackendUrl(url); }).catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (!showKeyboard) return;
-    const timer = setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }, 80);
-    return () => clearTimeout(timer);
-  }, [showKeyboard]);
 
   const handleLogin = async () => {
     if (loading) return;
@@ -126,7 +117,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className={`lp-shell${showKeyboard ? " lp-shell--kb-open" : ""}`}>
+    <div className="lp-shell">
 
       {/* ── LEFT: Brand showcase ── */}
       <section className="lp-brand">
@@ -173,7 +164,7 @@ export default function LoginPage() {
       {/* ── RIGHT: Form ── */}
       <section className="lp-form-wrap">
         <div className="lp-form-container">
-          <div className="lp-form" ref={formRef}>
+          <div className="lp-form">
 
             <div className="lp-form-head">
               <span className="lp-kicker">Acceso al sistema</span>
@@ -264,7 +255,7 @@ export default function LoginPage() {
         )}
       </section>
 
-      <TouchKeyboard open={showKeyboard} onClose={() => setShowKeyboard(false)} />
+      <LoginKeyboard open={showKeyboard} onClose={() => setShowKeyboard(false)} />
     </div>
   );
 }

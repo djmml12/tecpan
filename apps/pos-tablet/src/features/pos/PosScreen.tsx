@@ -1103,13 +1103,15 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
     }
   };
 
-  /* Imprime a cocina/barra desde un ticket en memoria (sin guardar en DB) */
+  /* Imprime a cocina/barra desde un ticket en memoria (sin guardar en DB).
+     snapshotCart: cart completo a guardar como kitchenSentCart (puede diferir de items cuando se envía diff) */
   const sendKitchenTicket = async (
     targets: ('kitchen' | 'bar')[],
     items: CartItem[],
     notes: string,
     reference?: string,
     ticketId?: string,
+    snapshotCart?: CartItem[],
   ) => {
     if (items.length === 0) return;
     setPrintLoading(true);
@@ -1135,27 +1137,28 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
           : targets[0] === "kitchen"       ? "Ticket enviado a cocina"
           :                                  "Ticket enviado a barra";
         show(label, { type: "success" });
-
+      } else {
+        throw new Error(response?.message || "Error desconocido");
+      }
+    } catch {
+      show("Sin impresora — orden marcada como enviada", { type: "warning" });
+    } finally {
+      if (mountedRef.current) {
+        setPrintLoading(false);
         if (ticketId) {
           const now = Date.now();
+          const cartSnapshot = snapshotCart ?? items;
           setOpenTickets(prev => prev.map(t => {
             if (t.id !== ticketId) return t;
             return {
               ...t,
               kitchenSentAt:   targets.includes("kitchen") ? now : t.kitchenSentAt,
               barSentAt:       targets.includes("bar")     ? now : t.barSentAt,
-              kitchenSentCart: targets.includes("kitchen") ? items : t.kitchenSentCart,
+              kitchenSentCart: targets.includes("kitchen") ? cartSnapshot : t.kitchenSentCart,
             };
           }));
         }
-      } else {
-        throw new Error(response?.message || "Error desconocido");
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "No se pudo enviar el ticket";
-      if (mountedRef.current) show(msg, { type: "error" });
-    } finally {
-      if (mountedRef.current) setPrintLoading(false);
     }
   };
 
@@ -1262,21 +1265,7 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
                           {itemsCount} ítems · {new Date(ticket.createdAt).toLocaleTimeString("es-GT", { timeStyle: "short" })}
                         </div>
                       </div>
-                      {ticket.kitchenSentAt && (
-                        <div className="ps-order-kitchen-status">
-                          <span className="ps-order-kitchen-dot" />
-                          En preparación
-                        </div>
-                      )}
-                      <div className="ps-order-card-actions" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          className={`ps-order-action-btn ps-order-action-btn--kitchen${ticket.kitchenSentAt ? " ps-order-action-btn--sent-kitchen" : ""}`}
-                          onClick={(e) => { e.stopPropagation(); void sendKitchenTicket(['kitchen'], ticket.cart, ticket.notes, ticket.label, ticket.id); }}
-                          disabled={printLoading}
-                          title={ticket.kitchenSentAt ? `Enviado ${new Date(ticket.kitchenSentAt).toLocaleTimeString("es-GT", { timeStyle: "short" })}` : undefined}
-                        >
-                          {ticket.kitchenSentAt ? "✓ Cocina" : "Cocina"}
-                        </button>
+                      <div className="ps-kitchen-sent-center">
                         {(() => {
                           if (!ticket.kitchenSentAt || !ticket.kitchenSentCart) return null;
                           const sentMap: Record<number, number> = {};
@@ -1285,21 +1274,33 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
                             const diff = i.quantity - (sentMap[i.productId] ?? 0);
                             return diff > 0 ? [{ ...i, quantity: diff }] : [];
                           });
-                          if (deltaItems.length === 0) return null;
-                          return (
-                            <button
-                              className="ps-order-action-btn ps-order-action-btn--update"
-                              onClick={(e) => { e.stopPropagation(); void sendKitchenTicket(['kitchen'], deltaItems, ticket.notes, `${ticket.label} (actualización)`, ticket.id); }}
-                              disabled={printLoading}
-                              title="Imprimir artículos nuevos a cocina"
-                            >
-                              Actualizar pedido
-                            </button>
-                          );
+                          if (deltaItems.length > 0) {
+                            return (
+                              <button
+                                className="ps-order-action-btn ps-order-action-btn--update"
+                                onClick={(e) => { e.stopPropagation(); void sendKitchenTicket(['kitchen'], deltaItems, ticket.notes, `${ticket.label} (actualización)`, ticket.id, ticket.cart); }}
+                                disabled={printLoading}
+                                title="Imprimir artículos nuevos a cocina"
+                              >
+                                Actualizar pedido
+                              </button>
+                            );
+                          }
+                          return <div className="ps-kitchen-sent-badge">Enviado a cocina</div>;
                         })()}
+                      </div>
+                      <div className="ps-order-card-actions" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          className="ps-order-action-btn ps-order-action-btn--kitchen"
+                          onClick={(e) => { e.stopPropagation(); void sendKitchenTicket(['kitchen'], ticket.cart, ticket.notes, ticket.label, ticket.id, ticket.cart); }}
+                          disabled={printLoading}
+                          title={ticket.kitchenSentAt ? `Enviado ${new Date(ticket.kitchenSentAt).toLocaleTimeString("es-GT", { timeStyle: "short" })}` : undefined}
+                        >
+                          {ticket.kitchenSentAt ? "✓ Cocina" : "Cocina"}
+                        </button>
                         {printerMode === "dual" && (
                           <button
-                            className={`ps-order-action-btn ps-order-action-btn--bar${ticket.barSentAt ? " ps-order-action-btn--sent-bar" : ""}`}
+                            className="ps-order-action-btn ps-order-action-btn--bar"
                             onClick={(e) => { e.stopPropagation(); void sendKitchenTicket(['bar'], ticket.cart, ticket.notes, ticket.label, ticket.id); }}
                             disabled={printLoading}
                             title={ticket.barSentAt ? `Enviado ${new Date(ticket.barSentAt).toLocaleTimeString("es-GT", { timeStyle: "short" })}` : undefined}

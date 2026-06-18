@@ -171,7 +171,7 @@ export function TouchKeyboard({
         <div className="uk-kb-row uk-kb-row--actions">
           <button
             type="button"
-            className="uk-kb-key uk-kb-key--action"
+            className="uk-kb-key uk-kb-key--action uk-kb-key--backspace"
             onPointerDown={(e) => { e.preventDefault(); doBackspace(); }}
             aria-label="Borrar"
           >
@@ -187,10 +187,9 @@ export function TouchKeyboard({
           </button>
           <button
             type="button"
-            className="uk-kb-key uk-kb-key--action"
+            className="uk-kb-key uk-kb-key--action uk-kb-key--enter"
             onPointerDown={(e) => {
               e.preventDefault();
-              /* Simulate Enter on the focused element */
               targetRef.current?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
             }}
             aria-label="Enter"
