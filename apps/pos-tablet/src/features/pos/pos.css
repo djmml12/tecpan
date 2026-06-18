@@ -164,9 +164,9 @@
 .ps-cat-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  font-size: 13px;
+  gap: 7px;
+  padding: 10.5px 10px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--fg-2);
   background: var(--bg-elev);
@@ -187,8 +187,8 @@
 }
 .tecpan-dark .ps-cat-chip--active { color: var(--accent-ink); }
 .ps-cat-count {
-  font-size: 11px;
-  padding: 1px 7px;
+  font-size: 12.5px;
+  padding: 1px 8px;
   border-radius: 999px;
   background: var(--bg-deeper);
   color: var(--fg-3);

@@ -171,14 +171,6 @@ function TrashIcon() {
   );
 }
 
-function BackIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  );
-}
-
 function PrintIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -997,7 +989,7 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
 
   const deleteTicket = (id: string) => {
     setOpenTickets(prev => prev.filter(t => t.id !== id));
-    if (activeTicketId === id) setActiveTicketId(null);
+    if (activeTicketId === id) clearCart();
   };
 
   /* ── Actions ──────────────────────────────────────────── */
@@ -1995,77 +1987,100 @@ export default function PosScreen({ role, onGoToAdmin, onLogout }: Props) {
         onClose={() => !payLoading && !payNoTipLoading && setShowPaySheet(false)}
         height="auto"
         title="Confirmar cobro"
-        draggable={!payLoading && !payNoTipLoading}
+        maxWidth={475}
+        centered
+        hideClose
+        draggable={false}
       >
-        <div style={{ padding: "0 20px 32px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ padding: "0 18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
 
-          <div style={{ textAlign: "center", paddingBottom: 4 }}>
+          {/* Total display */}
+          <div style={{
+            background: "linear-gradient(160deg, #2B1A08 0%, #1C0E04 100%)",
+            borderRadius: 16,
+            padding: "16px 20px",
+            textAlign: "center",
+            marginBottom: 2,
+          }}>
             {tipPercentage > 0 ? (
               <>
-                <p className="ps-pay-total-label">Subtotal</p>
-                <p className="ps-pay-total-amount" style={{ fontSize: "1.4rem" }}>{fmt(cartTotal)}</p>
-                <p className="ps-pay-total-label" style={{ marginTop: 6 }}>
-                  Propina ({tipPercentage}%)&nbsp;&nbsp;
-                  <span style={{ fontWeight: 700 }}>
-                    {fmt(money(cartTotal * tipPercentage / 100))}
-                  </span>
-                </p>
-                <p className="ps-pay-total-label" style={{ marginTop: 4 }}>Total</p>
-                <p className="ps-pay-total-amount">
-                  {fmt(money(cartTotal + money(cartTotal * tipPercentage / 100)))}
-                </p>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginBottom: 10 }}>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(244,236,216,0.5)" }}>Subtotal</p>
+                    <p style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "rgba(244,236,216,0.75)", fontVariantNumeric: "tabular-nums" }}>{fmt(cartTotal)}</p>
+                  </div>
+                  <span style={{ color: "rgba(244,236,216,0.35)", fontSize: 16, fontWeight: 700 }}>+</span>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(244,236,216,0.5)" }}>Propina ({tipPercentage}%)</p>
+                    <p style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: "rgba(244,236,216,0.75)", fontVariantNumeric: "tabular-nums" }}>{fmt(money(cartTotal * tipPercentage / 100))}</p>
+                  </div>
+                </div>
+                <div style={{ borderTop: "1px solid rgba(244,236,216,0.12)", paddingTop: 10 }}>
+                  <p style={{ margin: 0, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(244,236,216,0.45)" }}>Total</p>
+                  <p style={{ margin: 0, fontSize: "1.9rem", fontWeight: 900, color: "#F5B514", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
+                    {fmt(money(cartTotal + money(cartTotal * tipPercentage / 100)))}
+                  </p>
+                </div>
               </>
             ) : (
               <>
-                <p className="ps-pay-total-label">Total a cobrar</p>
-                <p className="ps-pay-total-amount">{fmt(cartTotal)}</p>
+                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(244,236,216,0.45)" }}>Total a cobrar</p>
+                <p style={{ margin: 0, fontSize: "2rem", fontWeight: 900, color: "#F5B514", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{fmt(cartTotal)}</p>
               </>
             )}
           </div>
 
+          {/* Confirmar cobro */}
           <Button
             variant="primary"
-            size="xl"
+            size="lg"
             fullWidth
             loading={payLoading}
             disabled={payNoTipLoading}
             onClick={() => void handlePay()}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
           >
             Confirmar cobro
           </Button>
 
-          <div style={{
-            display: "flex", alignItems: "center", gap: 10,
-            fontSize: 12, color: "var(--text-3)", fontWeight: 600,
-          }}>
-            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-            <span>o bien</span>
-            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-          </div>
+          {/* Cobrar sin propina */}
+          {tipPercentage > 0 && (
+            <Button
+              variant="success"
+              size="sm"
+              fullWidth
+              loading={payNoTipLoading}
+              disabled={payLoading}
+              onClick={() => void handlePay({ noTip: true })}
+              style={{
+                background: "transparent",
+                color: "var(--success)",
+                borderColor: "var(--success)",
+              }}
+            >
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <line x1="5" y1="5" x2="19" y2="19" strokeOpacity=".4"/>
+                </svg>
+                Cobrar sin propina
+              </span>
+            </Button>
+          )}
 
-          <Button
-            variant="secondary"
-            size="lg"
-            fullWidth
-            loading={payNoTipLoading}
-            disabled={payLoading}
-            onClick={() => void handlePay({ noTip: true })}
-          >
-            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="5" y1="12" x2="19" y2="12"/>
-                <line x1="5" y1="5" x2="19" y2="19" strokeOpacity=".4"/>
-              </svg>
-              Cobrar sin propina
-            </span>
-          </Button>
-
+          {/* Cancelar */}
           <Button
             variant="ghost"
-            size="md"
+            size="sm"
             fullWidth
             disabled={payLoading || payNoTipLoading}
             onClick={() => setShowPaySheet(false)}
+            style={{
+              background: "rgba(212, 160, 32, 0.1)",
+              color: "#C48F0C",
+              borderColor: "rgba(212, 160, 32, 0.35)",
+              border: "1px solid rgba(212, 160, 32, 0.35)",
+            }}
           >
             Cancelar
           </Button>

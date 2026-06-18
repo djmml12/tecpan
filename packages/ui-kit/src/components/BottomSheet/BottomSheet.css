@@ -14,6 +14,12 @@
   animation: uk-bs-backdrop-in var(--dur-slow) var(--ease) forwards;
 }
 
+.uk-bs-backdrop--centered {
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 0;
+}
+
 @keyframes uk-bs-backdrop-in {
   from {
     background: rgba(28, 25, 23, 0);
@@ -45,6 +51,17 @@
 @keyframes uk-bs-slide-in {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
+}
+
+@keyframes uk-bs-scale-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.uk-bs--centered {
+  animation: uk-bs-scale-in var(--dur-slow) var(--ease) forwards;
+  border-radius: var(--radius-2xl) !important;
+  border: 1px solid var(--border-strong, rgba(98, 70, 32, 0.26));
 }
 
 /* Heights */

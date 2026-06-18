@@ -1,20 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BottomSheet, Button, FAB, Input, NumKeypad, SwipeRow, useToast } from "@pos/ui-kit";
+import { useToast } from "@pos/ui-kit";
 import { apiRequest } from "../../services/api";
-import { useKeyboard } from "../../context/KeyboardContext";
 import "./BodegaManager.css";
 
-/* ── Types ────────────────────────────────────────────────────────────────── */
+/* ── Types ─────────────────────────────────────────────────────────────────── */
 
 interface Insumo {
-  id:            number;
-  nombre:        string;
-  unidad_base:   string;
-  stock_actual:  number;
-  stock_min:     number;
-  stock_critico: number;
-  costo_unitario:number;
-  activo:        number;
+  id:             number;
+  nombre:         string;
+  unidad_base:    string;
+  stock_actual:   number;
+  stock_min:      number;
+  stock_critico:  number;
+  costo_unitario: number;
+  activo:         number;
 }
 
 interface ProductoBodega {
@@ -26,122 +25,123 @@ interface ProductoBodega {
 }
 
 interface RecetaItem {
-  insumo_id:           number;
-  insumo_nombre:       string;
-  unidad_base:         string;
-  cantidad_por_porcion:number;
+  insumo_id:            number;
+  insumo_nombre:        string;
+  unidad_base:          string;
+  cantidad_por_porcion: number;
 }
 
-/* ── Helpers ──────────────────────────────────────────────────────────────── */
+type InsumoMode  = "idle" | "new" | "edit" | "compra" | "ajuste";
+type RecetaMode  = "idle" | "add_ing";
+type ActiveField = "nombre" | "min" | "crit" | "cantidad" | "factor" | "costo" | "notas" | "ajuste" | "qty" | null;
+
+/* ── Constants ──────────────────────────────────────────────────────────────── */
+
+const KEY_ROWS = [
+  ["1","2","3","4","5","6","7","8","9","0"],
+  ["q","w","e","r","t","y","u","i","o","p"],
+  ["a","s","d","f","g","h","j","k","l","ñ"],
+  ["z","x","c","v","b","n","m","."],
+];
+
+const UNIDADES = ["pieza", "litro", "gramo", "ml", "libra"];
+const UNIDADES_COMPRA: Record<string, string[]> = {
+  pieza: ["libra", "kilo", "caja", "unidad"],
+  litro: ["litro", "barril"],
+  gramo: ["gramo", "kilo", "libra"],
+  ml:    ["ml", "litro", "botella"],
+  libra: ["libra", "kilo"],
+};
+const NUMERIC_FIELDS = new Set(["min", "crit", "cantidad", "factor", "costo", "ajuste", "qty"]);
+const KB_LABEL: Partial<Record<string, string>> = {
+  nombre:   "nombre del insumo",
+  min:      "stock mínimo",
+  crit:     "stock crítico",
+  cantidad: "cantidad comprada",
+  factor:   "factor de conversión",
+  costo:    "costo total (Q)",
+  notas:    "notas",
+  ajuste:   "cantidad real",
+  qty:      "cantidad por porción",
+};
+
+/* ── Helpers ────────────────────────────────────────────────────────────────── */
 
 const fmtQ = (n: number) =>
   new Intl.NumberFormat("es-GT", { style: "currency", currency: "GTQ", minimumFractionDigits: 2 }).format(n);
 
-const fmtNum = (n: number, dec = 1) => Number(n).toFixed(dec).replace(/\.0$/, "");
+const fmtNum = (n: number, dec = 1) =>
+  Number(n).toFixed(dec).replace(/\.0$/, "");
 
 const safeNum = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
 const unwrap = <T,>(p: unknown): T =>
   (p && typeof p === "object" && "data" in p) ? (p as { data: T }).data : p as T;
 
-const UNIDADES = ["pieza", "litro", "gramo", "ml", "libra"];
-const UNIDADES_COMPRA: Record<string, string[]> = {
-  pieza:  ["libra", "kilo", "caja", "unidad"],
-  litro:  ["litro", "barril"],
-  gramo:  ["gramo", "kilo", "libra"],
-  ml:     ["ml", "litro", "botella"],
-  libra:  ["libra", "kilo"],
+const stockLevel = (ins: Insumo): "ok" | "low" | "crit" | "zero" => {
+  const s = ins.stock_actual;
+  if (s <= 0)                 return "zero";
+  if (s <= ins.stock_critico) return "crit";
+  if (s <= ins.stock_min)     return "low";
+  return "ok";
 };
 
-/* ── Stock badge ──────────────────────────────────────────────────────────── */
-
-function StockBadge({ insumo, onClick }: { insumo: Insumo; onClick: () => void }) {
-  const s = insumo.stock_actual;
-  const cls =
-    s <= 0                   ? "bdg-stock bdg-stock--zero" :
-    s <= insumo.stock_critico ? "bdg-stock bdg-stock--crit" :
-    s <= insumo.stock_min     ? "bdg-stock bdg-stock--low"  :
-                                "bdg-stock bdg-stock--ok";
-  return (
-    <button className={cls} onClick={onClick} onPointerDown={e => e.stopPropagation()}>
-      <span>{fmtNum(s, s % 1 === 0 ? 0 : 1)}</span>
-      <span className="bdg-stock-label">{insumo.unidad_base}</span>
-    </button>
-  );
-}
-
-/* ── Icons ────────────────────────────────────────────────────────────────── */
-
-function PlusIcon() {
-  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
-}
-function ChevronIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>;
-}
-function EditIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
-}
-
-/* ── Component ────────────────────────────────────────────────────────────── */
+/* ── Component ──────────────────────────────────────────────────────────────── */
 
 export default function BodegaManager({ role = "admin" }: { role?: string }) {
-  const { show }         = useToast();
-  const { setKeyboardOpen } = useKeyboard();
-  const mountedRef       = useRef(true);
-  const canEdit          = role === "admin";
+  const { show }   = useToast();
+  const mountedRef = useRef(true);
+  const canEdit    = role === "admin";
 
-  /* Sub-tab */
+  /* Navigation */
   const [subTab, setSubTab] = useState<"insumos" | "recetas">("insumos");
 
-  /* Search */
-  const [search, setSearch] = useState("");
+  /* Insumos data */
+  const [insumos,      setInsumos]      = useState<Insumo[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [selInsumoId,  setSelInsumoId]  = useState<number | null>(null);
+  const [insumoMode,   setInsumoMode]   = useState<InsumoMode>("idle");
 
-  /* Data */
-  const [insumos,   setInsumos]   = useState<Insumo[]>([]);
-  const [productos, setProductos] = useState<ProductoBodega[]>([]);
-  const [loading,   setLoading]   = useState(true);
+  /* Insumo form fields */
+  const [iNombre, setINombre] = useState("");
+  const [iUnidad, setIUnidad] = useState("pieza");
+  const [iMin,    setIMin]    = useState("");
+  const [iCrit,   setICrit]   = useState("");
+
+  /* Compra fields */
+  const [cCantidad, setCCantidad] = useState("");
+  const [cUnidad,   setCUnidad]   = useState("libra");
+  const [cFactor,   setCFactor]   = useState("");
+  const [cCosto,    setCCosto]    = useState("");
+  const [cNotas,    setCNotas]    = useState("");
+
+  /* Ajuste */
+  const [ajusteVal, setAjusteVal] = useState("");
+
+  /* Recetas data */
+  const [productos,    setProductos]   = useState<ProductoBodega[]>([]);
   const [loadingProds, setLoadingProds] = useState(false);
+  const prodsLoadedRef = useRef(false);
+  const [selProdId,    setSelProdId]   = useState<number | null>(null);
+  const [recetaItems,  setRecetaItems] = useState<RecetaItem[]>([]);
+  const [recetaMode,   setRecetaMode]  = useState<RecetaMode>("idle");
+  const [ingInsumoId,  setIngInsumoId] = useState<number | null>(null);
+  const [ingQty,       setIngQty]      = useState("");
 
-  /* ── Insumo form ─────────────────────────────────────────────────────────── */
-  const [showInsumoForm, setShowInsumoForm] = useState(false);
-  const [formMode,       setFormMode]       = useState<"create" | "edit">("create");
-  const [editInsumo,     setEditInsumo]     = useState<Insumo | null>(null);
-  const [fNombre,        setFNombre]        = useState("");
-  const [fUnidad,        setFUnidad]        = useState("pieza");
-  const [fMin,           setFMin]           = useState("");
-  const [fCrit,          setFCrit]          = useState("");
-  const [savingInsumo,   setSavingInsumo]   = useState(false);
+  /* UI state */
+  const [activeField, setActiveField] = useState<ActiveField>(null);
+  const [busy,        setBusy]        = useState(false);
+  const [confirmDel,  setConfirmDel]  = useState(false);
 
-  /* ── Compra sheet ────────────────────────────────────────────────────────── */
-  const [showCompra,    setShowCompra]    = useState(false);
-  const [compraInsumo,  setCompraInsumo]  = useState<Insumo | null>(null);
-  const [cCantidad,     setCCantidad]     = useState("");
-  const [cUnidad,       setCUnidad]       = useState("libra");
-  const [cFactor,       setCFactor]       = useState("");
-  const [cCosto,        setCCosto]        = useState("");
-  const [cNotas,        setCNotas]        = useState("");
-  const [savingCompra,  setSavingCompra]  = useState(false);
+  /* Derived */
+  const selInsumo  = insumos.find(i => i.id === selInsumoId) ?? null;
+  const selProd    = productos.find(p => p.id === selProdId) ?? null;
+  const ingInsumo  = insumos.find(i => i.id === ingInsumoId) ?? null;
+  const compraBase = safeNum(cCantidad) * safeNum(cFactor) || safeNum(cCantidad);
+  const compraCostU = compraBase > 0 ? safeNum(cCosto) / compraBase : 0;
+  const factorNeeded = insumoMode === "compra" && selInsumo !== null && selInsumo.unidad_base !== cUnidad;
 
-  /* ── Ajuste sheet ────────────────────────────────────────────────────────── */
-  const [showAjuste,   setShowAjuste]   = useState(false);
-  const [ajusteInsumo, setAjusteInsumo] = useState<Insumo | null>(null);
-  const [ajusteVal,    setAjusteVal]    = useState("0");
-
-  /* ── Receta editor ───────────────────────────────────────────────────────── */
-  const [showReceta,    setShowReceta]    = useState(false);
-  const [recetaProd,    setRecetaProd]    = useState<ProductoBodega | null>(null);
-  const [recetaItems,   setRecetaItems]   = useState<RecetaItem[]>([]);
-  const [showSelector,  setShowSelector]  = useState(false);
-  const [selectorQty,   setSelectorQty]   = useState("");
-  const [selectorIng,   setSelectorIng]   = useState<Insumo | null>(null);
-  const [savingReceta,  setSavingReceta]  = useState(false);
-
-  /* ── Keyboard open for text forms ──────────────────────────────────────── */
-  useEffect(() => {
-    setKeyboardOpen(showInsumoForm || showCompra);
-  }, [showInsumoForm, showCompra, setKeyboardOpen]);
-
-  /* ── Load ────────────────────────────────────────────────────────────────── */
+  /* ── Load ──────────────────────────────────────────────────────────────────── */
 
   const loadInsumos = useCallback(async () => {
     setLoading(true);
@@ -156,17 +156,20 @@ export default function BodegaManager({ role = "admin" }: { role?: string }) {
   }, [show]);
 
   const loadProductos = useCallback(async () => {
-    if (productos.length) return;
+    if (prodsLoadedRef.current) return;
     setLoadingProds(true);
     try {
       const raw = await apiRequest("/bodega/productos");
-      if (mountedRef.current) setProductos(unwrap<ProductoBodega[]>(raw));
+      if (mountedRef.current) {
+        setProductos(unwrap<ProductoBodega[]>(raw));
+        prodsLoadedRef.current = true;
+      }
     } catch {
       if (mountedRef.current) show("Error cargando productos", { type: "error" });
     } finally {
       if (mountedRef.current) setLoadingProds(false);
     }
-  }, [show, productos.length]);
+  }, [show]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -178,73 +181,104 @@ export default function BodegaManager({ role = "admin" }: { role?: string }) {
     if (subTab === "recetas") void loadProductos();
   }, [subTab, loadProductos]);
 
-  /* ── Insumo CRUD ─────────────────────────────────────────────────────────── */
+  /* ── Navigation ────────────────────────────────────────────────────────────── */
 
-  const openCreate = () => {
-    setFormMode("create"); setEditInsumo(null);
-    setFNombre(""); setFUnidad("pieza"); setFMin(""); setFCrit("");
-    setShowInsumoForm(true);
+  const selectInsumo = (id: number) => {
+    setSelInsumoId(id);
+    setInsumoMode("idle");
+    setActiveField(null);
+    setConfirmDel(false);
   };
 
-  const openEdit = (ins: Insumo) => {
-    setFormMode("edit"); setEditInsumo(ins);
-    setFNombre(ins.nombre); setFUnidad(ins.unidad_base);
-    setFMin(String(ins.stock_min)); setFCrit(String(ins.stock_critico));
-    setShowInsumoForm(true);
+  const openNewInsumo = () => {
+    setSelInsumoId(null);
+    setINombre(""); setIUnidad("pieza"); setIMin(""); setICrit("");
+    setInsumoMode("new");
+    setActiveField("nombre");
+    setConfirmDel(false);
   };
 
-  const handleSaveInsumo = async () => {
-    if (!fNombre.trim()) { show("Nombre requerido", { type: "warning" }); return; }
-    setSavingInsumo(true);
+  const openEdit = () => {
+    if (!selInsumo) return;
+    setINombre(selInsumo.nombre);
+    setIUnidad(selInsumo.unidad_base);
+    setIMin(String(selInsumo.stock_min));
+    setICrit(String(selInsumo.stock_critico));
+    setInsumoMode("edit");
+    setActiveField("nombre");
+    setConfirmDel(false);
+  };
+
+  const openCompra = () => {
+    if (!selInsumo) return;
+    setCCantidad(""); setCFactor(""); setCCosto(""); setCNotas("");
+    setCUnidad(UNIDADES_COMPRA[selInsumo.unidad_base]?.[0] ?? "libra");
+    setInsumoMode("compra");
+    setActiveField("cantidad");
+  };
+
+  const openAjuste = () => {
+    if (!selInsumo) return;
+    setAjusteVal(String(Math.round(Math.max(0, selInsumo.stock_actual))));
+    setInsumoMode("ajuste");
+    setActiveField("ajuste");
+  };
+
+  const selectProduct = async (prod: ProductoBodega) => {
+    setSelProdId(prod.id);
+    setRecetaMode("idle");
+    setIngInsumoId(null);
+    setIngQty("");
+    setActiveField(null);
+    setRecetaItems([]);
     try {
-      const body = { nombre: fNombre.trim(), unidad_base: fUnidad, stock_min: safeNum(fMin), stock_critico: safeNum(fCrit) };
-      if (formMode === "create") {
+      const raw   = await apiRequest(`/bodega/receta/${prod.id}`);
+      const items = unwrap<RecetaItem[]>(raw);
+      if (mountedRef.current) setRecetaItems(items);
+    } catch {
+      show("Error cargando receta", { type: "error" });
+    }
+  };
+
+  /* ── Save functions ─────────────────────────────────────────────────────────── */
+
+  const saveInsumo = async () => {
+    if (!iNombre.trim()) { show("Nombre requerido", { type: "warning" }); return; }
+    setBusy(true);
+    try {
+      const body = { nombre: iNombre.trim(), unidad_base: iUnidad, stock_min: safeNum(iMin), stock_critico: safeNum(iCrit) };
+      if (insumoMode === "new") {
         const created = unwrap<Insumo>(await apiRequest("/bodega/insumos", { method: "POST", body: JSON.stringify(body) }));
-        if (mountedRef.current) setInsumos(p => [...p, created]);
-        show("Insumo creado", { type: "success" });
-      } else {
-        const updated = unwrap<Insumo>(await apiRequest(`/bodega/insumos/${editInsumo!.id}`, { method: "PUT", body: JSON.stringify(body) }));
-        if (mountedRef.current) setInsumos(p => p.map(x => x.id === updated.id ? updated : x));
-        show("Insumo actualizado", { type: "success" });
+        if (mountedRef.current) {
+          setInsumos(p => [...p, created]);
+          setSelInsumoId(created.id);
+          setInsumoMode("idle");
+          setActiveField(null);
+          show("Insumo creado", { type: "success" });
+        }
+      } else if (selInsumoId) {
+        const updated = unwrap<Insumo>(await apiRequest(`/bodega/insumos/${selInsumoId}`, { method: "PUT", body: JSON.stringify(body) }));
+        if (mountedRef.current) {
+          setInsumos(p => p.map(x => x.id === updated.id ? updated : x));
+          setInsumoMode("idle");
+          setActiveField(null);
+          show("Guardado", { type: "success" });
+        }
       }
-      if (mountedRef.current) setShowInsumoForm(false);
-    } catch (e: unknown) {
+    } catch (e) {
       show(e instanceof Error ? e.message : "Error al guardar", { type: "error" });
     } finally {
-      if (mountedRef.current) setSavingInsumo(false);
+      if (mountedRef.current) setBusy(false);
     }
   };
 
-  const handleDeleteInsumo = async (ins: Insumo) => {
-    try {
-      await apiRequest(`/bodega/insumos/${ins.id}`, { method: "DELETE" });
-      if (mountedRef.current) setInsumos(p => p.filter(x => x.id !== ins.id));
-      show(`"${ins.nombre}" eliminado`, { type: "info" });
-    } catch (e: unknown) {
-      show(e instanceof Error ? e.message : "Error al eliminar", { type: "error" });
-    }
-  };
-
-  /* ── Compra ──────────────────────────────────────────────────────────────── */
-
-  const openCompra = (ins: Insumo) => {
-    setCompraInsumo(ins);
-    setCCantidad(""); setCFactor(""); setCCosto(""); setCNotas("");
-    const uComp = UNIDADES_COMPRA[ins.unidad_base]?.[0] ?? "libra";
-    setCUnidad(uComp);
-    setShowCompra(true);
-  };
-
-  const compraBase  = safeNum(cCantidad) * safeNum(cFactor) || safeNum(cCantidad);
-  const compraCostU = compraBase > 0 ? safeNum(cCosto) / compraBase : 0;
-  const factorNeeded = compraInsumo && compraInsumo.unidad_base !== cUnidad;
-
-  const handleSaveCompra = async () => {
+  const saveCompra = async () => {
+    if (!selInsumoId) return;
     if (!safeNum(cCantidad)) { show("Cantidad requerida", { type: "warning" }); return; }
-    if (!safeNum(cCosto))    { show("Costo requerido", { type: "warning" }); return; }
+    if (!safeNum(cCosto))    { show("Costo requerido",    { type: "warning" }); return; }
     const factor = factorNeeded ? safeNum(cFactor) : 1;
     if (factorNeeded && !factor) { show("Factor de conversión requerido", { type: "warning" }); return; }
-    setSavingCompra(true);
+    setBusy(true);
     try {
       const body = {
         cantidad_compra: safeNum(cCantidad),
@@ -253,452 +287,600 @@ export default function BodegaManager({ role = "admin" }: { role?: string }) {
         costo_total:     safeNum(cCosto),
         notas:           cNotas || null,
       };
-      const updated = unwrap<Insumo>(await apiRequest(`/bodega/insumos/${compraInsumo!.id}/compra`, { method: "POST", body: JSON.stringify(body) }));
+      const updated = unwrap<Insumo>(await apiRequest(`/bodega/insumos/${selInsumoId}/compra`, { method: "POST", body: JSON.stringify(body) }));
       if (mountedRef.current) {
         setInsumos(p => p.map(x => x.id === updated.id ? updated : x));
-        setShowCompra(false);
+        setInsumoMode("idle");
+        setActiveField(null);
+        show("Compra registrada", { type: "success" });
       }
-      show("Compra registrada", { type: "success" });
-    } catch (e: unknown) {
+    } catch (e) {
       show(e instanceof Error ? e.message : "Error al registrar", { type: "error" });
     } finally {
-      if (mountedRef.current) setSavingCompra(false);
+      if (mountedRef.current) setBusy(false);
     }
   };
 
-  /* ── Ajuste físico ───────────────────────────────────────────────────────── */
-
-  const openAjuste = (ins: Insumo) => {
-    setAjusteInsumo(ins);
-    setAjusteVal(String(Math.max(0, Math.round(ins.stock_actual))));
-    setShowAjuste(true);
-  };
-
-  const handleAjuste = async () => {
-    if (!ajusteInsumo) return;
+  const saveAjuste = async () => {
+    if (!selInsumoId || !selInsumo) return;
     const val = safeNum(ajusteVal);
+    setBusy(true);
     try {
-      const updated = unwrap<Insumo>(await apiRequest(`/bodega/insumos/${ajusteInsumo.id}/ajuste`, {
+      const updated = unwrap<Insumo>(await apiRequest(`/bodega/insumos/${selInsumoId}/ajuste`, {
         method: "POST",
         body: JSON.stringify({ nueva_cantidad: val }),
       }));
       if (mountedRef.current) {
         setInsumos(p => p.map(x => x.id === updated.id ? updated : x));
-        setShowAjuste(false);
-        show(`Stock ajustado a ${fmtNum(val, 1)} ${ajusteInsumo.unidad_base}`, { type: "success" });
+        setInsumoMode("idle");
+        setActiveField(null);
+        show(`Stock ajustado a ${fmtNum(val, 1)} ${selInsumo.unidad_base}`, { type: "success" });
       }
-    } catch (e: unknown) {
+    } catch (e) {
       show(e instanceof Error ? e.message : "Error al ajustar", { type: "error" });
+    } finally {
+      if (mountedRef.current) setBusy(false);
     }
   };
 
-  /* ── Receta ──────────────────────────────────────────────────────────────── */
-
-  const openReceta = async (prod: ProductoBodega) => {
-    setRecetaProd(prod);
-    setRecetaItems([]);
-    setShowReceta(true);
+  const deleteInsumo = async () => {
+    if (!selInsumoId) return;
+    if (!confirmDel) { setConfirmDel(true); return; }
+    setBusy(true);
     try {
-      const raw = await apiRequest(`/bodega/receta/${prod.id}`);
-      const items = unwrap<RecetaItem[]>(raw);
-      if (mountedRef.current) setRecetaItems(items);
-    } catch {
-      show("Error cargando receta", { type: "error" });
+      await apiRequest(`/bodega/insumos/${selInsumoId}`, { method: "DELETE" });
+      if (mountedRef.current) {
+        setInsumos(p => p.filter(x => x.id !== selInsumoId));
+        setSelInsumoId(null);
+        setInsumoMode("idle");
+        setActiveField(null);
+        setConfirmDel(false);
+        show("Insumo eliminado", { type: "info" });
+      }
+    } catch (e) {
+      show(e instanceof Error ? e.message : "Error al eliminar", { type: "error" });
+      if (mountedRef.current) setConfirmDel(false);
+    } finally {
+      if (mountedRef.current) setBusy(false);
     }
   };
-
-  const openSelector = () => { setSelectorIng(null); setSelectorQty(""); setShowSelector(true); };
 
   const addIngredient = () => {
-    if (!selectorIng) return;
-    const qty = safeNum(selectorQty);
+    if (!ingInsumo) return;
+    const qty = safeNum(ingQty);
     if (!qty) { show("Ingresa la cantidad", { type: "warning" }); return; }
     setRecetaItems(p => {
-      const existing = p.find(x => x.insumo_id === selectorIng!.id);
-      if (existing) return p.map(x => x.insumo_id === selectorIng!.id ? { ...x, cantidad_por_porcion: qty } : x);
-      return [...p, { insumo_id: selectorIng!.id, insumo_nombre: selectorIng!.nombre, unidad_base: selectorIng!.unidad_base, cantidad_por_porcion: qty }];
+      const existing = p.find(x => x.insumo_id === ingInsumo.id);
+      if (existing) return p.map(x => x.insumo_id === ingInsumo.id ? { ...x, cantidad_por_porcion: qty } : x);
+      return [...p, { insumo_id: ingInsumo.id, insumo_nombre: ingInsumo.nombre, unidad_base: ingInsumo.unidad_base, cantidad_por_porcion: qty }];
     });
-    setShowSelector(false);
+    setIngInsumoId(null);
+    setIngQty("");
+    setRecetaMode("idle");
+    setActiveField(null);
   };
 
-  const handleSaveReceta = async () => {
-    if (!recetaProd) return;
-    setSavingReceta(true);
+  const saveReceta = async () => {
+    if (!selProdId) return;
+    setBusy(true);
     try {
       const ingredientes = recetaItems.map(x => ({ insumo_id: x.insumo_id, cantidad_por_porcion: x.cantidad_por_porcion }));
-      await apiRequest(`/bodega/receta/${recetaProd.id}`, { method: "PUT", body: JSON.stringify({ ingredientes }) });
+      await apiRequest(`/bodega/receta/${selProdId}`, { method: "PUT", body: JSON.stringify({ ingredientes }) });
       const tipo: "directo" | "receta" = ingredientes.length > 0 ? "receta" : "directo";
       if (mountedRef.current) {
-        setProductos(p => p.map(x => x.id === recetaProd.id ? { ...x, tipo_stock: tipo, receta_count: ingredientes.length } : x));
-        setShowReceta(false);
+        setProductos(p => p.map(x => x.id === selProdId ? { ...x, tipo_stock: tipo, receta_count: ingredientes.length } : x));
+        show("Receta guardada", { type: "success" });
       }
-      show("Receta guardada", { type: "success" });
-    } catch (e: unknown) {
+    } catch (e) {
       show(e instanceof Error ? e.message : "Error al guardar receta", { type: "error" });
     } finally {
-      if (mountedRef.current) setSavingReceta(false);
+      if (mountedRef.current) setBusy(false);
     }
   };
 
-  /* ── Render ──────────────────────────────────────────────────────────────── */
+  /* ── Keyboard ───────────────────────────────────────────────────────────────── */
+
+  const applyToActive = (fn: (prev: string) => string) => {
+    switch (activeField) {
+      case "nombre":   setINombre(fn);    break;
+      case "min":      setIMin(fn);       break;
+      case "crit":     setICrit(fn);      break;
+      case "cantidad": setCCantidad(fn);  break;
+      case "factor":   setCFactor(fn);    break;
+      case "costo":    setCCosto(fn);     break;
+      case "notas":    setCNotas(fn);     break;
+      case "ajuste":   setAjusteVal(fn);  break;
+      case "qty":      setIngQty(fn);     break;
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (busy) return;
+    if (insumoMode === "new" || insumoMode === "edit") { await saveInsumo(); return; }
+    if (insumoMode === "compra")                       { await saveCompra(); return; }
+    if (insumoMode === "ajuste")                       { await saveAjuste(); return; }
+    if (recetaMode === "add_ing" && ingInsumoId)       { addIngredient();   return; }
+  };
+
+  const onKeyTap = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!activeField) return;
+    const el = (e.target as HTMLElement).closest("[data-key],[data-action]") as HTMLElement | null;
+    if (!el) return;
+    const key    = el.dataset.key;
+    const action = el.dataset.action;
+    if (action === "backspace") { applyToActive(p => p.slice(0, -1)); return; }
+    if (action === "space") {
+      if (!NUMERIC_FIELDS.has(activeField)) applyToActive(p => p + " ");
+      return;
+    }
+    if (action === "enter") { void handleConfirm(); return; }
+    if (key) {
+      if (NUMERIC_FIELDS.has(activeField) && !/[\d.]/.test(key)) return;
+      applyToActive(p => (key === "." && p.includes(".")) ? p : p + key);
+    }
+  };
+
+  const showKeyboard = canEdit && activeField !== null;
+
+  /* ── Render ─────────────────────────────────────────────────────────────────── */
+
+  if (loading) {
+    return (
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-3)", fontWeight: 600 }}>
+        Cargando bodega...
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div className="bdg-layout">
-        {/* Header */}
-        <div className="bdg-header av-header">
-          <h2 className="av-title">Bodega</h2>
-          {canEdit && subTab === "insumos" && (
-            <Button variant="secondary" size="md" onClick={openCreate}>+ Insumo</Button>
-          )}
-        </div>
+    <div className="be-root">
 
-        {/* Sub-tabs */}
-        <div className="bdg-tabs">
-          <button className={`bdg-tab${subTab === "insumos" ? " bdg-tab--active" : ""}`} onClick={() => { setSubTab("insumos"); setSearch(""); }}>
-            Insumos
-          </button>
-          <button className={`bdg-tab${subTab === "recetas" ? " bdg-tab--active" : ""}`} onClick={() => { setSubTab("recetas"); setSearch(""); }}>
-            Recetas
-          </button>
+      {/* ── Header ── */}
+      <header className="be-header">
+        <h2 className="be-main-title">Bodega</h2>
+        <div className="be-tabs">
+          <button
+            className={`be-tab${subTab === "insumos" ? " be-tab--active" : ""}`}
+            onClick={() => { setSubTab("insumos"); setActiveField(null); setInsumoMode("idle"); }}
+          >Insumos</button>
+          <button
+            className={`be-tab${subTab === "recetas" ? " be-tab--active" : ""}`}
+            onClick={() => { setSubTab("recetas"); setActiveField(null); setRecetaMode("idle"); }}
+          >Recetas</button>
         </div>
+      </header>
 
-        {/* Search bar */}
-        <div className="bdg-search-bar">
-          <div className="bdg-search-wrap">
-            <svg className="bdg-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              className="bdg-search"
-              placeholder={subTab === "insumos" ? "Buscar insumo..." : "Buscar receta..."}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              type="search"
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-            />
-            {search && (
-              <button
-                className="bdg-search-clear"
-                onClick={() => setSearch("")}
-                onPointerDown={e => e.preventDefault()}
-                aria-label="Borrar búsqueda"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            )}
-          </div>
-        </div>
+      {/* ── Work area ── */}
+      <div className="be-work">
 
-        {/* ── INSUMOS tab ───────────────────────────────────────────────── */}
-        {subTab === "insumos" && (
-          <div className="bdg-list">
-            {loading ? (
-              <div className="bdg-empty"><div className="bdg-empty-title">Cargando...</div></div>
-            ) : insumos.length === 0 ? (
-              <div className="bdg-empty">
-                <div className="bdg-empty-icon">📦</div>
-                <div className="bdg-empty-title">Sin insumos registrados</div>
-                <p style={{ fontSize: 13 }}>Agrega materias primas para controlar el stock por receta.</p>
-              </div>
-            ) : (() => {
-              const q = search.trim().toLowerCase();
-              const filtered = q ? insumos.filter(i => i.nombre.toLowerCase().includes(q)) : insumos;
-              if (filtered.length === 0) return (
-                <div className="bdg-empty">
-                  <div className="bdg-empty-title">Sin resultados para "{search.trim()}"</div>
+        {subTab === "insumos" ? (
+          <>
+            {/* Col 1: Insumos list */}
+            <section className="be-col be-col--list">
+              <div className="be-col-head">
+                <div className="be-col-headmain">
+                  <div className="be-col-title">Insumos</div>
+                  <div className="be-col-sub">{insumos.length} materias primas</div>
                 </div>
-              );
-              return filtered.map(ins => (
-                <SwipeRow
-                  key={ins.id}
-                  actions={canEdit ? [
-                    { label: "Editar",    color: "var(--primary)", onAction: () => openEdit(ins) },
-                    { label: "Eliminar",  color: "var(--danger)",  onAction: () => void handleDeleteInsumo(ins) },
-                  ] : []}
-                >
-                  <div className="bdg-row" onClick={() => openEdit(ins)}>
-                    <div className="bdg-row-info">
-                      <div className="bdg-row-name">{ins.nombre}</div>
-                      <div className="bdg-row-meta">
-                        {ins.costo_unitario > 0 ? `${fmtQ(ins.costo_unitario)} / ${ins.unidad_base}` : ins.unidad_base}
-                        {ins.stock_min > 0 ? ` · mín ${fmtNum(ins.stock_min, 0)}` : ""}
+                <span className="be-pill">{insumos.length}</span>
+              </div>
+              <div className="be-scroll">
+                <div className="be-itemlist">
+                  {insumos.map(ins => {
+                    const lvl = stockLevel(ins);
+                    return (
+                      <button
+                        key={ins.id}
+                        className={`be-itemrow${selInsumoId === ins.id ? " be-itemrow--active" : ""}`}
+                        onClick={() => selectInsumo(ins.id)}
+                      >
+                        <div className="be-itemname">{ins.nombre}</div>
+                        <div className={`be-itemstk be-itemstk--${lvl}`}>
+                          {fmtNum(ins.stock_actual, ins.stock_actual % 1 === 0 ? 0 : 1)}
+                          <span className="be-itemstk-unit"> {ins.unidad_base}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {canEdit && (
+                <div className="be-col-foot">
+                  <button className="be-newitem" onClick={openNewInsumo}>+ Nuevo insumo</button>
+                </div>
+              )}
+            </section>
+
+            {/* Col 2: Insumo detail + actions */}
+            <section className="be-col be-col--detail">
+              {selInsumo ? (
+                <>
+                  <div className="be-col-head">
+                    <div className="be-col-headmain">
+                      <div className="be-col-title">{selInsumo.nombre}</div>
+                      <div className="be-col-sub">{selInsumo.unidad_base}</div>
+                    </div>
+                  </div>
+                  <div className="be-scroll">
+                    <div className="be-detail-body">
+                      <div className={`be-detail-stock be-detail-stock--${stockLevel(selInsumo)}`}>
+                        <div className="be-detail-stock-val">
+                          {fmtNum(selInsumo.stock_actual, selInsumo.stock_actual % 1 === 0 ? 0 : 1)}
+                        </div>
+                        <div className="be-detail-stock-unit">{selInsumo.unidad_base}</div>
+                        <div className="be-detail-stock-label">en existencia</div>
+                      </div>
+                      <div className="be-thresholds">
+                        <div className="be-threshold-item">
+                          <span className="be-threshold-label">Mínimo</span>
+                          <span className="be-threshold-val be-threshold-val--low">{fmtNum(selInsumo.stock_min, 0)}</span>
+                        </div>
+                        <div className="be-threshold-item">
+                          <span className="be-threshold-label">Crítico</span>
+                          <span className="be-threshold-val be-threshold-val--crit">{fmtNum(selInsumo.stock_critico, 0)}</span>
+                        </div>
+                        {selInsumo.costo_unitario > 0 && (
+                          <div className="be-threshold-item">
+                            <span className="be-threshold-label">Costo</span>
+                            <span className="be-threshold-val">{fmtQ(selInsumo.costo_unitario)}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="be-action-list">
+                        <button className="be-action-btn be-action-btn--compra" onClick={openCompra}>
+                          <span className="be-action-icon">📦</span>
+                          <div>
+                            <div className="be-action-label">Registrar compra</div>
+                            <div className="be-action-sub">Agregar stock al inventario</div>
+                          </div>
+                        </button>
+                        <button className="be-action-btn be-action-btn--ajuste" onClick={openAjuste}>
+                          <span className="be-action-icon">🔢</span>
+                          <div>
+                            <div className="be-action-label">Ajuste físico</div>
+                            <div className="be-action-sub">Corregir cantidad real</div>
+                          </div>
+                        </button>
+                        {canEdit && (
+                          <button className="be-action-btn be-action-btn--edit" onClick={openEdit}>
+                            <span className="be-action-icon">✏️</span>
+                            <div>
+                              <div className="be-action-label">Editar datos</div>
+                              <div className="be-action-sub">Nombre, unidad, umbrales</div>
+                            </div>
+                          </button>
+                        )}
+                        {canEdit && (
+                          <button
+                            className={`be-delete${confirmDel ? " be-delete--confirm" : ""}`}
+                            onClick={() => void deleteInsumo()}
+                            disabled={busy}
+                          >
+                            {confirmDel ? "¿Confirmar eliminación?" : "Eliminar insumo"}
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <StockBadge insumo={ins} onClick={() => openCompra(ins)} />
-                    {canEdit && (
+                  </div>
+                </>
+              ) : (
+                <div className="be-empty">
+                  <div className="be-empty-icon">📦</div>
+                  <div className="be-empty-title">Selecciona un insumo</div>
+                </div>
+              )}
+            </section>
+
+            {/* Col 3: Editor */}
+            {canEdit && (
+              <section className="be-col be-col--editor">
+                {insumoMode === "idle" && (
+                  <div className="be-empty">
+                    <div className="be-empty-title">{selInsumo ? "Elige una acción" : "—"}</div>
+                  </div>
+                )}
+
+                {(insumoMode === "new" || insumoMode === "edit") && (
+                  <>
+                    <div className="be-mode">
+                      <span className="be-modechip">{insumoMode === "new" ? "Nuevo insumo" : "Editar insumo"}</span>
+                    </div>
+                    <label className="be-label">Nombre del insumo</label>
+                    <div
+                      className={`be-field be-field--big${activeField === "nombre" ? " be-field--active" : ""}`}
+                      onClick={() => setActiveField("nombre")}
+                    >
+                      {iNombre || <span className="be-placeholder">Nombre del insumo</span>}
+                    </div>
+                    <label className="be-label">Unidad de inventario</label>
+                    <select className="be-select" value={iUnidad} onChange={e => setIUnidad(e.target.value)}>
+                      {UNIDADES.map(u => <option key={u} value={u}>{u}</option>)}
+                    </select>
+                    <div className="be-row2">
+                      <div>
+                        <label className="be-label">Stock mínimo</label>
+                        <div
+                          className={`be-field${activeField === "min" ? " be-field--active" : ""}`}
+                          onClick={() => setActiveField("min")}
+                        >
+                          {iMin ? <>{iMin}<span className="be-cur"> {iUnidad}</span></> : <span className="be-placeholder">0</span>}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="be-label">Stock crítico</label>
+                        <div
+                          className={`be-field${activeField === "crit" ? " be-field--active" : ""}`}
+                          onClick={() => setActiveField("crit")}
+                        >
+                          {iCrit ? <>{iCrit}<span className="be-cur"> {iUnidad}</span></> : <span className="be-placeholder">0</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <button className="be-primary" onClick={() => void saveInsumo()} disabled={busy}>
+                      {insumoMode === "new" ? "Crear insumo" : "Guardar cambios"}
+                    </button>
+                  </>
+                )}
+
+                {insumoMode === "compra" && selInsumo && (
+                  <>
+                    <div className="be-mode">
+                      <span className="be-modechip be-modechip--compra">Registrar compra</span>
+                    </div>
+                    <div className="be-context">
+                      {selInsumo.nombre} · stock actual: <strong>{fmtNum(selInsumo.stock_actual, 1)} {selInsumo.unidad_base}</strong>
+                    </div>
+                    <div className="be-row2">
+                      <div>
+                        <label className="be-label">Cantidad comprada</label>
+                        <div
+                          className={`be-field${activeField === "cantidad" ? " be-field--active" : ""}`}
+                          onClick={() => setActiveField("cantidad")}
+                        >
+                          {cCantidad || <span className="be-placeholder">0</span>}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="be-label">Unidad de compra</label>
+                        <select className="be-select be-select--sm" value={cUnidad} onChange={e => setCUnidad(e.target.value)}>
+                          {(UNIDADES_COMPRA[selInsumo.unidad_base] ?? ["libra"]).map(u => (
+                            <option key={u} value={u}>{u}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    {factorNeeded && (
+                      <>
+                        <label className="be-label">{selInsumo.unidad_base} por {cUnidad}</label>
+                        <div
+                          className={`be-field${activeField === "factor" ? " be-field--active" : ""}`}
+                          onClick={() => setActiveField("factor")}
+                        >
+                          {cFactor || <span className="be-placeholder">Ej: 10</span>}
+                        </div>
+                      </>
+                    )}
+                    <label className="be-label">Costo total de la compra (Q)</label>
+                    <div
+                      className={`be-field${activeField === "costo" ? " be-field--active" : ""}`}
+                      onClick={() => setActiveField("costo")}
+                    >
+                      {cCosto ? <><span className="be-cur">Q</span>{cCosto}</> : <span className="be-placeholder">Q 0.00</span>}
+                    </div>
+                    {compraBase > 0 && safeNum(cCosto) > 0 && (
+                      <div className="be-preview">
+                        Entran: <strong>{fmtNum(compraBase, 1)} {selInsumo.unidad_base}</strong>
+                        {" · "}Costo: <strong>{fmtQ(compraCostU)}/{selInsumo.unidad_base}</strong>
+                      </div>
+                    )}
+                    <label className="be-label">Notas (opcional)</label>
+                    <div
+                      className={`be-field${activeField === "notas" ? " be-field--active" : ""}`}
+                      onClick={() => setActiveField("notas")}
+                    >
+                      {cNotas || <span className="be-placeholder">Proveedor, factura...</span>}
+                    </div>
+                    <button className="be-primary" onClick={() => void saveCompra()} disabled={busy}>
+                      Registrar compra
+                    </button>
+                  </>
+                )}
+
+                {insumoMode === "ajuste" && selInsumo && (
+                  <>
+                    <div className="be-mode">
+                      <span className="be-modechip be-modechip--ajuste">Ajuste físico</span>
+                    </div>
+                    <div className="be-context">
+                      Stock en sistema: <strong>{fmtNum(selInsumo.stock_actual, 1)} {selInsumo.unidad_base}</strong>
+                    </div>
+                    <label className="be-label">Nueva cantidad ({selInsumo.unidad_base})</label>
+                    <div
+                      className={`be-field be-field--big be-field--num${activeField === "ajuste" ? " be-field--active" : ""}`}
+                      onClick={() => setActiveField("ajuste")}
+                    >
+                      <span className="be-ajuste-val">{ajusteVal || "0"}</span>
+                      <span className="be-cur"> {selInsumo.unidad_base}</span>
+                    </div>
+                    <button className="be-primary" onClick={() => void saveAjuste()} disabled={busy}>
+                      Confirmar ajuste
+                    </button>
+                  </>
+                )}
+              </section>
+            )}
+          </>
+        ) : (
+          /* ── RECETAS ── */
+          <>
+            {/* Col 1: Products */}
+            <section className="be-col be-col--list">
+              <div className="be-col-head">
+                <div className="be-col-headmain">
+                  <div className="be-col-title">Productos</div>
+                  <div className="be-col-sub">{productos.length} artículos</div>
+                </div>
+                <span className="be-pill">{productos.length}</span>
+              </div>
+              <div className="be-scroll">
+                {loadingProds ? (
+                  <div className="be-empty"><div className="be-empty-title">Cargando...</div></div>
+                ) : (
+                  <div className="be-itemlist">
+                    {productos.map(prod => (
                       <button
-                        className="inv-edit-btn"
-                        onPointerDown={e => e.stopPropagation()}
-                        onClick={e => { e.stopPropagation(); openAjuste(ins); }}
-                        aria-label="Ajuste físico"
-                        title="Conteo físico"
+                        key={prod.id}
+                        className={`be-itemrow${selProdId === prod.id ? " be-itemrow--active" : ""}`}
+                        onClick={() => void selectProduct(prod)}
                       >
-                        <EditIcon />
+                        <div className="be-itemname">{prod.name}</div>
+                        <span className={`be-tipo${prod.tipo_stock === "receta" ? " be-tipo--receta" : " be-tipo--directo"}`}>
+                          {prod.tipo_stock === "receta" ? `${prod.receta_count} ing.` : "Directo"}
+                        </span>
                       </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Col 2: Ingredient list */}
+            <section className="be-col be-col--ing">
+              {selProd ? (
+                <>
+                  <div className="be-col-head">
+                    <div className="be-col-headmain">
+                      <div className="be-col-title">{selProd.name}</div>
+                      <div className="be-col-sub">{recetaItems.length} ingredientes</div>
+                    </div>
+                  </div>
+                  <div className="be-scroll">
+                    {recetaItems.length === 0 ? (
+                      <div className="be-empty">
+                        <div className="be-empty-icon">📋</div>
+                        <div className="be-empty-title">Sin ingredientes</div>
+                      </div>
+                    ) : (
+                      <div className="be-ing-list">
+                        {recetaItems.map(item => (
+                          <div key={item.insumo_id} className="be-ing-row">
+                            <div className="be-ing-info">
+                              <div className="be-ing-name">{item.insumo_nombre}</div>
+                              <div className="be-ing-qty">
+                                {fmtNum(item.cantidad_por_porcion, item.cantidad_por_porcion % 1 === 0 ? 0 : 2)} {item.unidad_base} / porción
+                              </div>
+                            </div>
+                            {canEdit && (
+                              <button
+                                className="be-ing-remove"
+                                onClick={() => setRecetaItems(p => p.filter(x => x.insumo_id !== item.insumo_id))}
+                              >×</button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                </SwipeRow>
-              ));
-            })()}
-          </div>
-        )}
-
-        {/* ── RECETAS tab ──────────────────────────────────────────────── */}
-        {subTab === "recetas" && (
-          <div className="bdg-list">
-            {loadingProds ? (
-              <div className="bdg-empty"><div className="bdg-empty-title">Cargando...</div></div>
-            ) : productos.length === 0 ? (
-              <div className="bdg-empty">
-                <div className="bdg-empty-icon">📋</div>
-                <div className="bdg-empty-title">Sin productos</div>
-              </div>
-            ) : (() => {
-              const q = search.trim().toLowerCase();
-              const filtered = q ? productos.filter(p => p.name.toLowerCase().includes(q)) : productos;
-              if (filtered.length === 0) return (
-                <div className="bdg-empty">
-                  <div className="bdg-empty-title">Sin resultados para "{search.trim()}"</div>
-                </div>
-              );
-              return filtered.map(prod => (
-                <div key={prod.id} className="bdg-prod-row" onClick={() => void openReceta(prod)}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="bdg-prod-name">{prod.name}</div>
-                    {prod.category_name && <div className="bdg-prod-cat">{prod.category_name}</div>}
-                  </div>
-                  {prod.tipo_stock === "receta" ? (
-                    <span className="bdg-tipo-badge bdg-tipo-badge--receta">
-                      Receta · {prod.receta_count} ing.
-                    </span>
-                  ) : (
-                    <span className="bdg-tipo-badge bdg-tipo-badge--directo">Directo</span>
+                  {canEdit && (
+                    <div className="be-col-foot be-col-foot--row">
+                      <button className="be-newitem" style={{ flex: 1 }} onClick={() => {
+                        setRecetaMode("add_ing");
+                        setIngInsumoId(null);
+                        setIngQty("");
+                        setActiveField(null);
+                      }}>+ Ingrediente</button>
+                      <button className="be-primary-sm" onClick={() => void saveReceta()} disabled={busy}>
+                        Guardar receta
+                      </button>
+                    </div>
                   )}
-                  <ChevronIcon />
+                </>
+              ) : (
+                <div className="be-empty">
+                  <div className="be-empty-icon">📋</div>
+                  <div className="be-empty-title">Selecciona un producto</div>
                 </div>
-              ));
-            })()}
-          </div>
+              )}
+            </section>
+
+            {/* Col 3: Add ingredient */}
+            {canEdit && (
+              <section className="be-col be-col--editor">
+                {recetaMode === "idle" && (
+                  <div className="be-empty">
+                    <div className="be-empty-title">{selProd ? 'Toca "+ Ingrediente"' : "—"}</div>
+                  </div>
+                )}
+                {recetaMode === "add_ing" && (
+                  <>
+                    <div className="be-mode">
+                      <span className="be-modechip">Agregar ingrediente</span>
+                    </div>
+                    {!ingInsumoId ? (
+                      <>
+                        <label className="be-label" style={{ marginBottom: 6 }}>Selecciona el insumo</label>
+                        <div className="be-selector-list">
+                          {insumos.filter(i => i.activo).map(ins => (
+                            <button
+                              key={ins.id}
+                              className="be-selector-item"
+                              onClick={() => { setIngInsumoId(ins.id); setIngQty(""); setActiveField("qty"); }}
+                            >
+                              <span className="be-selector-name">{ins.nombre}</span>
+                              <span className="be-selector-unit">{ins.unidad_base}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : ingInsumo && (
+                      <>
+                        <div className="be-ing-selected">
+                          <div className="be-ing-selected-name">{ingInsumo.nombre}</div>
+                          <button className="be-ing-change" onClick={() => { setIngInsumoId(null); setActiveField(null); }}>Cambiar</button>
+                        </div>
+                        <label className="be-label">Cantidad por porción ({ingInsumo.unidad_base})</label>
+                        <div
+                          className={`be-field be-field--big${activeField === "qty" ? " be-field--active" : ""}`}
+                          onClick={() => setActiveField("qty")}
+                        >
+                          {ingQty ? <>{ingQty}<span className="be-cur"> {ingInsumo.unidad_base}</span></> : <span className="be-placeholder">0</span>}
+                        </div>
+                        <button className="be-primary" onClick={addIngredient} disabled={!safeNum(ingQty)}>
+                          Agregar ingrediente
+                        </button>
+                      </>
+                    )}
+                  </>
+                )}
+              </section>
+            )}
+          </>
         )}
       </div>
 
-      {/* FAB — solo en insumos */}
-      {canEdit && subTab === "insumos" && (
-        <FAB icon={<PlusIcon />} label="Insumo" position="bottom-right" onClick={openCreate} />
-      )}
-
-      {/* ── Crear / Editar Insumo ──────────────────────────────────────── */}
-      <BottomSheet
-        open={showInsumoForm}
-        onClose={() => !savingInsumo && setShowInsumoForm(false)}
-        height="auto"
-        title={formMode === "create" ? "Nuevo insumo" : "Editar insumo"}
-        draggable={!savingInsumo}
-      >
-        <div className="bdg-form">
-          <Input
-            label="Nombre del insumo"
-            value={fNombre}
-            onChange={e => setFNombre(e.target.value)}
-            autoComplete="off"
-          />
-          <div className="bdg-field">
-            <div className="bdg-label">Unidad de inventario</div>
-            <select className="bdg-select" value={fUnidad} onChange={e => setFUnidad(e.target.value)}>
-              {UNIDADES.map(u => <option key={u} value={u}>{u}</option>)}
-            </select>
-          </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <Input
-              label={`Stock mínimo (${fUnidad})`}
-              type="number" inputMode="decimal"
-              value={fMin} onChange={e => setFMin(e.target.value)}
-            />
-            <Input
-              label={`Stock crítico (${fUnidad})`}
-              type="number" inputMode="decimal"
-              value={fCrit} onChange={e => setFCrit(e.target.value)}
-            />
-          </div>
-          <Button variant="primary" size="xl" fullWidth loading={savingInsumo} onClick={() => void handleSaveInsumo()}>
-            {formMode === "create" ? "Crear insumo" : "Guardar cambios"}
-          </Button>
-        </div>
-      </BottomSheet>
-
-      {/* ── Registrar Compra ────────────────────────────────────────────── */}
-      <BottomSheet
-        open={showCompra}
-        onClose={() => !savingCompra && setShowCompra(false)}
-        height="auto"
-        title={compraInsumo ? `Compra — ${compraInsumo.nombre}` : "Registrar compra"}
-        draggable={!savingCompra}
-      >
-        <div className="bdg-form">
-          <div style={{ display: "flex", gap: 10 }}>
-            <Input
-              label="Cantidad comprada"
-              type="number" inputMode="decimal"
-              value={cCantidad} onChange={e => setCCantidad(e.target.value)}
-            />
-            <div className="bdg-field" style={{ minWidth: 110 }}>
-              <div className="bdg-label">Unidad</div>
-              <select className="bdg-select" value={cUnidad} onChange={e => setCUnidad(e.target.value)}>
-                {(UNIDADES_COMPRA[compraInsumo?.unidad_base ?? "pieza"] ?? ["libra"]).map(u =>
-                  <option key={u} value={u}>{u}</option>
+      {/* ── Keyboard ── */}
+      {showKeyboard && (
+        <div className="be-keyboard" onMouseDown={onKeyTap}>
+          <div className="be-kb-bar">{KB_LABEL[activeField ?? ""] ?? ""}</div>
+          <div className="be-kb-rows">
+            {KEY_ROWS.map((row, ri) => (
+              <div key={ri} className="be-kb-row">
+                {ri === KEY_ROWS.length - 1 && (
+                  <button className="be-key be-key--back" data-action="backspace">⌫</button>
                 )}
-              </select>
-            </div>
-          </div>
-
-          {factorNeeded && (
-            <Input
-              label={`${compraInsumo?.unidad_base ?? "piezas"} por ${cUnidad}`}
-              type="number" inputMode="decimal"
-              value={cFactor} onChange={e => setCFactor(e.target.value)}
-              placeholder={`Ej: 10 ${compraInsumo?.unidad_base ?? "piezas"} por ${cUnidad}`}
-            />
-          )}
-
-          <Input
-            label="Costo total de la compra (Q)"
-            type="number" inputMode="decimal"
-            value={cCosto} onChange={e => setCCosto(e.target.value)}
-          />
-
-          {compraBase > 0 && safeNum(cCosto) > 0 && (
-            <div className="bdg-preview">
-              Entran: <strong>{fmtNum(compraBase, 1)} {compraInsumo?.unidad_base}</strong>
-              {" · "}Costo: <strong>{fmtQ(compraCostU)} / {compraInsumo?.unidad_base}</strong>
-            </div>
-          )}
-
-          <Input
-            label="Notas (opcional)"
-            value={cNotas} onChange={e => setCNotas(e.target.value)}
-            autoComplete="off"
-          />
-
-          <Button variant="primary" size="xl" fullWidth loading={savingCompra} onClick={() => void handleSaveCompra()}>
-            Registrar compra
-          </Button>
-        </div>
-      </BottomSheet>
-
-      {/* ── Ajuste físico ───────────────────────────────────────────────── */}
-      <BottomSheet
-        open={showAjuste}
-        onClose={() => setShowAjuste(false)}
-        height="auto"
-        title={ajusteInsumo ? `Conteo físico — ${ajusteInsumo.nombre}` : "Ajuste de stock"}
-      >
-        {ajusteInsumo && (
-          <div style={{ padding: "0 16px 24px" }}>
-            <p style={{ fontSize: 13, color: "var(--text-3)", marginBottom: 12 }}>
-              Stock actual en sistema: <strong>{fmtNum(ajusteInsumo.stock_actual, 1)} {ajusteInsumo.unidad_base}</strong>
-            </p>
-            <NumKeypad
-              value={ajusteVal}
-              onChange={setAjusteVal}
-              showConfirm
-              onConfirm={() => void handleAjuste()}
-              displayLabel={`Nueva cantidad (${ajusteInsumo.unidad_base})`}
-            />
-          </div>
-        )}
-      </BottomSheet>
-
-      {/* ── Editor de Receta ─────────────────────────────────────────────── */}
-      <BottomSheet
-        open={showReceta}
-        onClose={() => !savingReceta && setShowReceta(false)}
-        height="full"
-        title={recetaProd ? `Receta — ${recetaProd.name}` : "Receta"}
-        draggable={!savingReceta}
-      >
-        <div className="bdg-receta-wrap">
-          {recetaItems.length === 0 ? (
-            <div style={{ padding: "20px 0 16px", color: "var(--text-3)", fontSize: 13, textAlign: "center" }}>
-              Sin ingredientes. Agrega uno para activar el inventario por receta.
-            </div>
-          ) : (
-            <div className="bdg-ing-list">
-              {recetaItems.map(item => (
-                <div key={item.insumo_id} className="bdg-ing-row">
-                  <div className="bdg-ing-info">
-                    <div className="bdg-ing-name">{item.insumo_nombre}</div>
-                    <div className="bdg-ing-qty">{fmtNum(item.cantidad_por_porcion, item.cantidad_por_porcion % 1 === 0 ? 0 : 1)} {item.unidad_base} por porción</div>
-                  </div>
-                  <button
-                    className="bdg-ing-remove"
-                    onClick={() => setRecetaItems(p => p.filter(x => x.insumo_id !== item.insumo_id))}
-                  >×</button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {canEdit && (
-            <button className="bdg-add-ing-btn" onClick={openSelector}>
-              <span style={{ fontSize: 18 }}>+</span> Agregar ingrediente
-            </button>
-          )}
-
-          <Button
-            variant="primary" size="xl" fullWidth
-            loading={savingReceta}
-            onClick={() => void handleSaveReceta()}
-          >
-            {recetaItems.length > 0 ? "Guardar receta" : "Guardar sin receta (stock directo)"}
-          </Button>
-        </div>
-      </BottomSheet>
-
-      {/* ── Selector de insumo ───────────────────────────────────────────── */}
-      <BottomSheet
-        open={showSelector}
-        onClose={() => setShowSelector(false)}
-        height="auto"
-        title="Seleccionar ingrediente"
-      >
-        {selectorIng ? (
-          <div className="bdg-form">
-            <p style={{ fontSize: 13, color: "var(--text-2)" }}>
-              <strong>{selectorIng.nombre}</strong> · {selectorIng.unidad_base}
-            </p>
-            <Input
-              label={`Cantidad por porción (${selectorIng.unidad_base})`}
-              type="number" inputMode="decimal"
-              value={selectorQty}
-              onChange={e => setSelectorQty(e.target.value)}
-              placeholder="Ej: 8"
-              autoComplete="off"
-            />
-            <div style={{ display: "flex", gap: 8 }}>
-              <Button variant="secondary" size="lg" onClick={() => setSelectorIng(null)}>Atrás</Button>
-              <Button variant="primary" size="lg" fullWidth onClick={addIngredient}>Agregar</Button>
-            </div>
-          </div>
-        ) : (
-          <div className="bdg-selector-list">
-            {insumos.filter(i => i.activo).map(ins => (
-              <button
-                key={ins.id}
-                className="bdg-selector-item"
-                onClick={() => setSelectorIng(ins)}
-              >
-                <span>{ins.nombre}</span>
-                <span className="bdg-selector-unit">{ins.unidad_base}</span>
-              </button>
+                {row.map(k => (
+                  <button key={k} className="be-key" data-key={k}>{k}</button>
+                ))}
+              </div>
             ))}
+            <div className="be-kb-row">
+              <button className="be-key be-key--space" data-action="space">espacio</button>
+              <button className="be-key be-key--enter" data-action="enter">Listo ⏎</button>
+            </div>
           </div>
-        )}
-      </BottomSheet>
-    </>
+        </div>
+      )}
+    </div>
   );
 }

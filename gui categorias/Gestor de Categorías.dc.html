@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#E7E5DF;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  .gc-scroll::-webkit-scrollbar{width:7px;}
+  .gc-scroll::-webkit-scrollbar-thumb{background:#DECFAE;border-radius:999px;}
+  .gc-scroll::-webkit-scrollbar-track{background:transparent;}
+  @keyframes gcToast{from{opacity:0;transform:translate(-50%,-10px);}to{opacity:1;transform:translate(-50%,0);}}
+</style>
+</helmet>
+
+<div data-screen-label="Editor de inventario" style="width:1280px;height:800px;display:flex;font-family:'Inter',system-ui,sans-serif;background:#EDE3CA;color:#2B1608;overflow:hidden;position:relative;">
+
+  <!-- ── Sidebar ─────────────────────────────────── -->
+  <aside style="width:206px;flex:none;background:linear-gradient(180deg,#1C0E06 0%,#2B1608 100%);display:flex;flex-direction:column;">
+    <div style="padding:20px 18px 16px;border-bottom:1px solid rgba(244,236,216,0.1);">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(244,236,216,0.5);">Panel de</div>
+      <div style="font-size:19px;font-weight:900;color:#F4ECD8;margin-top:2px;font-family:'Archivo',sans-serif;">Administración</div>
+    </div>
+    <nav style="flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:3px;">
+      <button style="{{ navInvStyle }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        <span>Inventario</span>
+      </button>
+      <sc-if value="{{ isSubview }}" hint-placeholder-val="{{ true }}">
+        <button style="{{ navCatStyle }}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          <span>Categorías</span>
+        </button>
+      </sc-if>
+      <button style="{{ navOtherStyle }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Bodega</span>
+      </button>
+      <button style="{{ navOtherStyle }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Reportes</span>
+      </button>
+      <button style="{{ navOtherStyle }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <span>Personal</span>
+      </button>
+    </nav>
+    <div style="padding:12px 10px;border-top:1px solid rgba(244,236,216,0.1);">
+      <button style="width:100%;height:44px;display:flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:13px;background:rgba(244,236,216,0.08);color:#F4ECD8;font-size:13.5px;font-weight:600;cursor:pointer;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Ir a Caja
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Content ─────────────────────────────────── -->
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column;position:relative;background:#EDE3CA;">
+
+    <!-- Header -->
+    <header style="padding:12px 20px;border-bottom:1px solid rgba(120,90,50,0.18);background:#F4ECD8;display:flex;align-items:center;gap:16px;flex:none;">
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:9px;flex-wrap:nowrap;">
+          <sc-if value="{{ isInline }}" hint-placeholder-val="{{ true }}">
+            <button style="display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 11px 0 7px;border:1.5px solid rgba(120,90,50,0.2);border-radius:999px;background:#EDE3CA;color:#5C4528;font-size:12px;font-weight:700;cursor:pointer;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              Inventario
+            </button>
+            <span style="color:#B0A180;font-size:13px;">/</span>
+          </sc-if>
+          <h1 style="margin:0;font-size:20px;font-weight:800;font-family:'Archivo',sans-serif;color:#2B1608;letter-spacing:-0.01em;white-space:nowrap;">Categorías y productos</h1>
+        </div>
+        <div style="font-size:12px;color:#8A7456;margin-top:2px;font-weight:500;">{{ contextNote }}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex:none;">
+        <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#B0A180;">Ubicación</span>
+        <button onClick="{{ goInline }}" style="{{ pillInlineStyle }}">En Inventario</button>
+        <button onClick="{{ goSubview }}" style="{{ pillSubStyle }}">Menú propio</button>
+      </div>
+    </header>
+
+    <!-- Work area: 3 columns -->
+    <div style="flex:1;min-height:0;display:flex;gap:14px;padding:14px 20px;">
+
+      <!-- Col 1 — Categorías -->
+      <section style="width:226px;flex:none;display:flex;flex-direction:column;background:#F4ECD8;border:1.5px solid rgba(120,90,50,0.16);border-radius:18px;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:8px;padding:14px 14px 10px;flex:none;">
+          <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:#5C4528;">Categorías</span>
+          <span style="font-size:11px;font-weight:800;color:#5C4528;background:#E8DCBE;border-radius:999px;padding:2px 8px;">{{ catCount }}</span>
+        </div>
+        <div class="gc-scroll" style="flex:1;min-height:0;overflow-y:auto;padding:0 10px;display:flex;flex-direction:column;gap:5px;">
+          <sc-for list="{{ categories }}" as="category" hint-placeholder-count="8">
+            <button onClick="{{ category.onSelect }}" style="{{ category.rowStyle }}">
+              <span style="{{ category.nameStyle }}">{{ category.name }}</span>
+              <span style="{{ category.countStyle }}">{{ category.count }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="padding:10px;flex:none;border-top:1px solid rgba(120,90,50,0.14);">
+          <button onClick="{{ newCategory }}" style="width:100%;height:42px;display:flex;align-items:center;justify-content:center;gap:7px;border:1.5px dashed rgba(120,90,50,0.32);border-radius:12px;background:transparent;color:#8A6A2E;font-size:13.5px;font-weight:800;cursor:pointer;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva categoría
+          </button>
+        </div>
+      </section>
+
+      <!-- Col 2 — Productos -->
+      <section style="width:356px;flex:none;display:flex;flex-direction:column;background:#F4ECD8;border:1.5px solid rgba(120,90,50,0.16);border-radius:18px;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:8px;padding:14px 16px 10px;flex:none;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:#5C4528;">Productos</div>
+            <div style="font-size:12px;color:#8A7456;font-weight:600;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ prodColSubtitle }}</div>
+          </div>
+          <button onClick="{{ newProduct }}" style="{{ addProdStyle }}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Producto
+          </button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 72px 58px;gap:8px;padding:4px 16px 6px;flex:none;border-bottom:1.5px solid rgba(120,90,50,0.16);">
+          <span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#A89A7C;">Artículo</span>
+          <span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#A89A7C;text-align:right;">Precio</span>
+          <span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#A89A7C;text-align:center;">Stock</span>
+        </div>
+        <div class="gc-scroll" style="flex:1;min-height:0;overflow-y:auto;">
+          <sc-if value="{{ hasProducts }}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{ visibleProducts }}" as="prod" hint-placeholder-count="5">
+              <button onClick="{{ prod.onSelect }}" style="{{ prod.rowStyle }}">
+                <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600;color:#2B1608;text-align:left;">{{ prod.name }}</span>
+                <span style="font-size:13.5px;font-weight:700;color:#B5810A;text-align:right;font-variant-numeric:tabular-nums;">{{ prod.priceLabel }}</span>
+                <span style="{{ prod.stockStyle }}">{{ prod.stock }}</span>
+              </button>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ prodEmpty }}" hint-placeholder-val="{{ true }}">
+            <div style="padding:32px 20px;text-align:center;color:#A89A7C;">
+              <div style="font-size:14px;font-weight:700;color:#8A7456;">{{ prodEmptyTitle }}</div>
+              <div style="font-size:12.5px;margin-top:4px;">{{ prodEmptyHint }}</div>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+
+      <!-- Col 3 — Editor -->
+      <section style="flex:1;min-width:0;display:flex;flex-direction:column;gap:11px;background:#F8F2DD;border:1.5px solid rgba(120,90,50,0.16);border-radius:18px;padding:16px;">
+        <div style="display:flex;align-items:center;gap:9px;">
+          <span style="{{ modeChipStyle }}">{{ modeLabel }}</span>
+          <sc-if value="{{ hasOrig }}" hint-placeholder-val="{{ true }}">
+            <span style="font-size:12.5px;color:#8A7456;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">«{{ origName }}»</span>
+          </sc-if>
+        </div>
+
+        <!-- CATEGORY editor -->
+        <sc-if value="{{ editingCategory }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:11px;flex:1;min-height:0;">
+            <div>
+              <label style="display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#8A7456;margin-bottom:7px;">Nombre de la categoría</label>
+              <input value="{{ catDraft }}" onClick="{{ focusCatName }}" readonly placeholder="Ej. Bebidas calientes" style="{{ catFieldStyle }}" />
+            </div>
+            <sc-if value="{{ dupeCat }}" hint-placeholder-val="{{ true }}">
+              <div style="font-size:12px;font-weight:700;color:#B33A1F;">Ya existe una categoría con ese nombre</div>
+            </sc-if>
+            <button onClick="{{ confirm }}" style="{{ primaryStyle }}">{{ primaryLabel }}</button>
+            <sc-if value="{{ canDeleteCat }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ deleteCurrent }}" style="{{ deleteStyle }}">{{ deleteLabel }}</button>
+            </sc-if>
+            <span style="flex:1;"></span>
+            <p style="margin:0;font-size:11.5px;line-height:1.5;color:#A89A7C;">Toca una categoría para renombrarla o eliminarla. Selecciónala para ver y editar sus productos.</p>
+          </div>
+        </sc-if>
+
+        <!-- PRODUCT editor -->
+        <sc-if value="{{ editingProduct }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;">
+            <div>
+              <label style="display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#8A7456;margin-bottom:6px;">Nombre del producto</label>
+              <input value="{{ pName }}" onClick="{{ focusName }}" readonly placeholder="Ej. Café americano" style="{{ nameFieldStyle }}" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#8A7456;margin-bottom:6px;">Precio venta</label>
+                <div style="{{ priceFieldStyle }}"><span style="color:#A89A7C;font-weight:700;margin-right:2px;">Q</span><span style="font-variant-numeric:tabular-nums;">{{ pPriceDisp }}</span></div>
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#8A7456;margin-bottom:6px;">Costo</label>
+                <div style="{{ costFieldStyle }}"><span style="color:#A89A7C;font-weight:700;margin-right:2px;">Q</span><span style="font-variant-numeric:tabular-nums;">{{ pCostDisp }}</span></div>
+              </div>
+            </div>
+            <div>
+              <label style="display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#8A7456;margin-bottom:6px;">Stock</label>
+              <div style="{{ stockFieldStyle }}"><span style="font-variant-numeric:tabular-nums;">{{ pStockDisp }}</span></div>
+            </div>
+            <button onClick="{{ confirm }}" style="{{ primaryStyle }}">{{ primaryLabel }}</button>
+            <sc-if value="{{ canDeleteProd }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ deleteCurrent }}" style="{{ deleteStyle }}">{{ deleteLabel }}</button>
+            </sc-if>
+          </div>
+        </sc-if>
+      </section>
+    </div>
+
+    <!-- Docked keyboard (reserved space) -->
+    <div style="flex:none;background:#E4DAC8;border-top:1.5px solid rgba(120,90,50,0.22);padding:6px 20px 10px;">
+      <div style="display:flex;align-items:center;justify-content:center;position:relative;height:22px;margin-bottom:2px;">
+        <span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#A89A7C;">Teclado táctil · {{ activeFieldLabel }}</span>
+      </div>
+      <div onPointerDown="{{ onKeyTap }}" style="display:flex;flex-direction:column;gap:7px;max-width:980px;margin:0 auto;">
+        <sc-for list="{{ keyRows }}" as="row" hint-placeholder-count="4">
+          <div style="display:flex;gap:8px;justify-content:center;">
+            <sc-for list="{{ row }}" as="key" hint-placeholder-count="10">
+              <button data-key="{{ key }}" style="flex:1;max-width:90px;height:46px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#2B1608;background:#FFFFFF;border:1px solid rgba(0,0,0,0.1);border-bottom:2px solid rgba(0,0,0,0.18);border-radius:10px;cursor:pointer;text-transform:lowercase;user-select:none;">{{ key }}</button>
+            </sc-for>
+          </div>
+        </sc-for>
+        <div style="display:flex;gap:8px;justify-content:center;">
+          <button data-action="backspace" style="flex:none;width:118px;height:46px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#C2500A;background:#FFF0E6;border:1px solid rgba(194,80,10,0.18);border-bottom:2px solid rgba(194,80,10,0.32);border-radius:10px;cursor:pointer;">⌫</button>
+          <button data-action="space" style="flex:1;max-width:500px;height:46px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6B5A3A;background:#D6CCBE;border:1px solid rgba(0,0,0,0.1);border-bottom:2px solid rgba(0,0,0,0.22);border-radius:10px;cursor:pointer;">espacio</button>
+          <button data-action="enter" style="flex:none;width:138px;height:46px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:800;color:#2B1608;background:linear-gradient(160deg,#F5C944,#E8A813 60%,#B5810A);border:none;border-bottom:2px solid rgba(120,80,10,0.4);border-radius:10px;cursor:pointer;">Listo ⏎</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ toast }}">
+      <div style="{{ toastStyle }}">
+        <span style="font-size:15px;">{{ toastIcon }}</span>
+        <span>{{ toastMsg }}</span>
+      </div>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800}}">
+class Component extends DCLogic {
+  state = {
+    framing: "inline",
+    categories: [
+      { id: 1, name: "Bebidas calientes" },
+      { id: 2, name: "Bebidas frías" },
+      { id: 3, name: "Panadería" },
+      { id: 4, name: "Pasteles" },
+      { id: 5, name: "Sándwiches" },
+      { id: 6, name: "Desayunos" },
+      { id: 7, name: "Snacks" },
+      { id: 8, name: "Extras" },
+    ],
+    products: [
+      { id: 101, cat: 1, name: "Café americano", price: 14, cost: 4, stock: 40 },
+      { id: 102, cat: 1, name: "Capuchino", price: 22, cost: 7, stock: 28 },
+      { id: 103, cat: 1, name: "Latte", price: 24, cost: 8, stock: 12 },
+      { id: 104, cat: 1, name: "Mocha", price: 26, cost: 9, stock: 4 },
+      { id: 105, cat: 1, name: "Chocolate caliente", price: 20, cost: 6, stock: 0 },
+      { id: 201, cat: 2, name: "Frappé de café", price: 30, cost: 10, stock: 18 },
+      { id: 202, cat: 2, name: "Té helado", price: 18, cost: 5, stock: 22 },
+      { id: 203, cat: 2, name: "Limonada", price: 16, cost: 4, stock: 9 },
+      { id: 301, cat: 3, name: "Croissant", price: 12, cost: 4, stock: 22 },
+      { id: 302, cat: 3, name: "Concha", price: 8, cost: 2, stock: 30 },
+      { id: 303, cat: 3, name: "Bagel", price: 14, cost: 5, stock: 6 },
+      { id: 401, cat: 4, name: "Pastel de chocolate", price: 35, cost: 12, stock: 11 },
+      { id: 402, cat: 4, name: "Cheesecake", price: 38, cost: 14, stock: 3 },
+      { id: 501, cat: 5, name: "Sándwich de pollo", price: 28, cost: 10, stock: 8 },
+      { id: 601, cat: 6, name: "Desayuno chapín", price: 32, cost: 12, stock: 14 },
+    ],
+    mode: "category",          // "category" | "product"
+    selCatId: 1,
+    editCatId: 1,              // null = creando categoría
+    selProdId: null,           // null = creando producto
+    catDraft: "Bebidas calientes",
+    prod: { name: "", price: "", cost: "", stock: "" },
+    activeField: "catName",    // catName | name | price | cost | stock
+    confirmDelete: false,
+    toast: null,
+    nextCat: 9,
+    nextProd: 700,
+  };
+  _t = null;
+  LOW = 15; CRIT = 5;
+
+  showToast(msg, type) {
+    clearTimeout(this._t);
+    this.setState({ toast: { msg, type: type || "ok" } });
+    this._t = setTimeout(() => this.setState({ toast: null }), 2400);
+  }
+
+  fmtQ(n) { return "Q" + (Number(n) || 0).toFixed(2); }
+
+  /* ── selection ── */
+  selectCategory = (c) => this.setState({
+    mode: "category", selCatId: c.id, editCatId: c.id, selProdId: null,
+    catDraft: c.name, activeField: "catName", confirmDelete: false,
+  });
+  newCategory = () => this.setState({
+    mode: "category", editCatId: null, selProdId: null,
+    catDraft: "", activeField: "catName", confirmDelete: false,
+  });
+  selectProduct = (p) => this.setState({
+    mode: "product", selProdId: p.id,
+    prod: { name: p.name, price: String(p.price), cost: String(p.cost), stock: String(p.stock) },
+    activeField: "name", confirmDelete: false,
+  });
+  newProduct = () => {
+    const st = this.state;
+    if (!st.selCatId || st.editCatId == null && !st.categories.some(c => c.id === st.selCatId)) {
+      this.showToast("Selecciona una categoría", "warn"); return;
+    }
+    this.setState({
+      mode: "product", selProdId: null,
+      prod: { name: "", price: "", cost: "", stock: "" },
+      activeField: "name", confirmDelete: false,
+    });
+  };
+
+  focusField = (f) => () => this.setState({ activeField: f });
+
+  /* ── keyboard ── */
+  onKeyTap = (e) => {
+    e.preventDefault();
+    const el = e.target.closest("[data-key],[data-action]");
+    if (!el) return;
+    const key = el.getAttribute("data-key");
+    const action = el.getAttribute("data-action");
+    if (action === "enter") { this.confirm(); return; }
+    const f = this.state.activeField;
+    const numeric = f === "price" || f === "cost" || f === "stock";
+    const noDot = f === "stock";
+    this.setState(s => {
+      const apply = (v) => {
+        if (action === "backspace") return v.slice(0, -1);
+        if (action === "space") return numeric ? v : v + " ";
+        if (key == null) return v;
+        if (numeric) {
+          if (!/[0-9.]/.test(key)) return v;
+          if (key === "." && (noDot || v.includes("."))) return v;
+        }
+        return v + key;
+      };
+      if (f === "catName") return { catDraft: apply(s.catDraft), confirmDelete: false };
+      return { prod: { ...s.prod, [f]: apply(s.prod[f]) }, confirmDelete: false };
+    });
+  };
+
+  /* ── confirm / delete ── */
+  confirm = () => {
+    const st = this.state;
+    if (st.mode === "category") {
+      const name = st.catDraft.trim();
+      if (!name) { this.showToast("Escribe un nombre", "warn"); return; }
+      if (st.categories.some(c => c.name.toLowerCase() === name.toLowerCase() && c.id !== st.editCatId)) {
+        this.showToast("Ya existe esa categoría", "warn"); return;
+      }
+      if (st.editCatId) {
+        this.setState({ categories: st.categories.map(c => c.id === st.editCatId ? { ...c, name } : c) });
+        this.showToast("Categoría actualizada");
+      } else {
+        const nm = name.charAt(0).toUpperCase() + name.slice(1);
+        const id = st.nextCat;
+        this.setState({ categories: [...st.categories, { id, name: nm }], nextCat: id + 1,
+          selCatId: id, editCatId: id, catDraft: nm });
+        this.showToast("Categoría creada");
+      }
+    } else {
+      const p = st.prod;
+      const name = p.name.trim();
+      if (!name) { this.showToast("Escribe el nombre del producto", "warn"); return; }
+      const price = parseFloat(p.price);
+      if (!(price > 0)) { this.showToast("Precio de venta requerido", "warn"); return; }
+      const cost = parseFloat(p.cost) || 0;
+      const stock = parseInt(p.stock, 10) || 0;
+      if (st.selProdId) {
+        this.setState({ products: st.products.map(x => x.id === st.selProdId ? { ...x, name, price, cost, stock } : x) });
+        this.showToast("Producto actualizado");
+      } else {
+        const nm = name.charAt(0).toUpperCase() + name.slice(1);
+        const id = st.nextProd;
+        this.setState({ products: [...st.products, { id, cat: st.selCatId, name: nm, price, cost, stock }],
+          nextProd: id + 1, selProdId: id,
+          prod: { name: nm, price: String(price), cost: String(cost), stock: String(stock) } });
+        this.showToast("Producto creado");
+      }
+    }
+  };
+
+  deleteCurrent = () => {
+    const st = this.state;
+    if (!st.confirmDelete) { this.setState({ confirmDelete: true }); return; }
+    if (st.mode === "category") {
+      const cat = st.categories.find(c => c.id === st.editCatId);
+      const rest = st.categories.filter(c => c.id !== st.editCatId);
+      const nextSel = rest[0] || null;
+      this.setState({
+        categories: rest,
+        products: st.products.filter(p => p.cat !== st.editCatId),
+        selCatId: nextSel ? nextSel.id : null,
+        editCatId: nextSel ? nextSel.id : null,
+        catDraft: nextSel ? nextSel.name : "",
+        selProdId: null, mode: "category", confirmDelete: false, activeField: "catName",
+      });
+      this.showToast('"' + (cat ? cat.name : "") + '" eliminada', "info");
+    } else {
+      const p = st.products.find(x => x.id === st.selProdId);
+      this.setState({
+        products: st.products.filter(x => x.id !== st.selProdId),
+        selProdId: null, mode: "category", editCatId: st.selCatId,
+        catDraft: (st.categories.find(c => c.id === st.selCatId) || {}).name || "",
+        activeField: "catName", confirmDelete: false,
+      });
+      this.showToast('"' + (p ? p.name : "") + '" eliminado', "info");
+    }
+  };
+
+  stockStyle(s) {
+    const base = "display:inline-flex;align-items:center;justify-content:center;width:100%;height:28px;border-radius:9px;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;";
+    if (s === 0) return base + "background:rgba(120,90,50,0.12);color:#8A7456;";
+    if (s <= this.CRIT) return base + "background:rgba(179,58,31,0.14);color:#8A2812;";
+    if (s <= this.LOW) return base + "background:rgba(214,122,26,0.16);color:#A05A0A;";
+    return base + "background:rgba(106,142,63,0.16);color:#4A6B1E;";
+  }
+
+  fieldBox(active, big) {
+    const h = big ? "62px" : "50px";
+    const base = "width:100%;height:" + h + ";display:flex;align-items:center;padding:0 16px;border-radius:13px;font-size:" + (big ? "18px" : "16px") + ";font-weight:700;color:#2B1608;font-family:inherit;outline:none;cursor:pointer;transition:all 120ms;";
+    return base + (active
+      ? "background:#FFFDF6;border:2px solid #E8A813;box-shadow:0 0 0 4px rgba(232,168,19,0.18);"
+      : "background:#FFFDF6;border:1.5px solid rgba(120,90,50,0.22);");
+  }
+
+  renderVals() {
+    const s = this.state;
+    const isInline = s.framing === "inline";
+    const selCat = s.categories.find(c => c.id === s.selCatId) || null;
+    const editingCategory = s.mode === "category";
+    const editingProduct = s.mode === "product";
+
+    const navBase = "width:100%;height:44px;display:flex;align-items:center;gap:11px;padding:0 13px;border:none;border-radius:13px;font-size:13.5px;cursor:pointer;text-align:left;transition:all 140ms;";
+    const navOn = navBase + "background:rgba(232,168,19,0.18);color:#F0B017;font-weight:700;";
+    const navOff = navBase + "background:transparent;color:rgba(244,236,216,0.62);font-weight:600;";
+    const pillBase = "height:34px;padding:0 14px;border-radius:999px;font-size:12.5px;font-weight:700;cursor:pointer;transition:all 140ms;border:1.5px solid;";
+    const pillOn = pillBase + "background:#E8A813;border-color:#B5810A;color:#2B1608;";
+    const pillOff = pillBase + "background:#F8F2DD;border-color:rgba(120,90,50,0.2);color:#5C4528;";
+
+    /* categories list */
+    const counts = {};
+    s.products.forEach(p => { counts[p.cat] = (counts[p.cat] || 0) + 1; });
+    const catRowBase = "display:flex;align-items:center;gap:8px;width:100%;padding:11px 12px;border-radius:12px;cursor:pointer;text-align:left;transition:all 130ms;border:1.5px solid;";
+    const categories = s.categories.map(c => {
+      const sel = c.id === s.selCatId && editingCategory ? false : c.id === s.selCatId;
+      const isSel = c.id === s.selCatId;
+      return {
+        name: c.name,
+        count: String(counts[c.id] || 0),
+        onSelect: () => this.selectCategory(c),
+        rowStyle: catRowBase + (isSel
+          ? "background:linear-gradient(160deg,#F5C944,#E8A813 70%,#D89A0E);border-color:#B5810A;box-shadow:0 4px 12px rgba(181,129,10,0.28);"
+          : "background:#FFFDF6;border-color:rgba(120,90,50,0.14);"),
+        nameStyle: "flex:1;min-width:0;font-size:14px;font-weight:700;color:#2B1608;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;",
+        countStyle: "flex:none;font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;padding:1px 8px;border-radius:999px;" + (isSel ? "background:rgba(43,22,8,0.18);color:#3A1F0B;" : "background:#EDE3CA;color:#8A7456;"),
+      };
+    });
+
+    /* products of selected category */
+    const prodRowBase = "display:grid;grid-template-columns:1fr 72px 58px;align-items:center;gap:8px;width:100%;padding:9px 16px;border:none;border-bottom:1px solid rgba(120,90,50,0.12);cursor:pointer;transition:background 120ms;background:#F4ECD8;";
+    const visibleProducts = s.products.filter(p => p.cat === s.selCatId).map(p => ({
+      name: p.name,
+      priceLabel: this.fmtQ(p.price),
+      stock: String(p.stock),
+      stockStyle: this.stockStyle(p.stock),
+      onSelect: () => this.selectProduct(p),
+      rowStyle: prodRowBase + (p.id === s.selProdId ? "background:#FBE3A4;" : ""),
+    }));
+    const hasCatSelected = !!selCat;
+    const hasProducts = hasCatSelected && visibleProducts.length > 0;
+    const prodEmpty = !hasProducts;
+
+    /* editor */
+    const af = s.activeField;
+    const afLabel = af === "price" ? "Precio venta" : af === "cost" ? "Costo" : af === "stock" ? "Stock" : "Nombre";
+
+    let primaryLabel, canSave, dupeCat = false;
+    if (editingCategory) {
+      const nm = s.catDraft.trim();
+      dupeCat = nm.length > 0 && s.categories.some(c => c.name.toLowerCase() === nm.toLowerCase() && c.id !== s.editCatId);
+      canSave = nm.length > 0 && !dupeCat;
+      primaryLabel = s.editCatId ? "Guardar categoría" : "Crear categoría";
+    } else {
+      canSave = s.prod.name.trim().length > 0 && parseFloat(s.prod.price) > 0;
+      primaryLabel = s.selProdId ? "Guardar producto" : "Crear producto";
+    }
+
+    let modeLabel, origName = "", hasOrig = false;
+    if (editingCategory) {
+      modeLabel = s.editCatId ? "Editando categoría" : "Nueva categoría";
+      if (s.editCatId && selCat) { origName = selCat.name; hasOrig = true; }
+    } else {
+      modeLabel = s.selProdId ? "Editando producto" : "Nuevo producto";
+      const op = s.products.find(p => p.id === s.selProdId);
+      if (op) { origName = op.name; hasOrig = true; }
+    }
+
+    let toastStyle = null, toastIcon = "", toastMsg = "";
+    if (s.toast) {
+      toastMsg = s.toast.msg;
+      const t = s.toast.type;
+      const col = t === "warn" ? "#D67A1A" : t === "info" ? "#5C4528" : "#6A8E3F";
+      toastIcon = t === "warn" ? "⚠" : t === "info" ? "🗑" : "✓";
+      toastStyle = "position:absolute;top:84px;left:50%;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:9px;padding:11px 20px;border-radius:13px;background:#FFFDF6;border:1.5px solid " + col + ";color:" + col + ";font-size:14px;font-weight:800;box-shadow:0 10px 30px rgba(70,44,14,0.18);animation:gcToast 200ms ease;";
+    }
+
+    return {
+      isInline, isSubview: !isInline,
+      contextNote: isInline
+        ? "Panel dentro de Inventario · administra categorías y sus productos"
+        : "Sub-vista propia · administra categorías y sus productos",
+      navInvStyle: isInline ? navOn : navOff,
+      navCatStyle: navOn, navOtherStyle: navOff,
+      pillInlineStyle: isInline ? pillOn : pillOff,
+      pillSubStyle: isInline ? pillOff : pillOn,
+
+      categories, catCount: s.categories.length,
+      newCategory: this.newCategory,
+
+      visibleProducts, hasProducts, prodEmpty,
+      prodColSubtitle: selCat ? selCat.name : "Sin categoría seleccionada",
+      prodEmptyTitle: hasCatSelected ? "Sin productos" : "Selecciona una categoría",
+      prodEmptyHint: hasCatSelected ? "Usa + Producto para agregar el primero" : "Elige una categoría en la izquierda",
+      addProdStyle: "display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border:none;border-radius:10px;background:linear-gradient(160deg,#F5C944,#E8A813 55%,#B5810A);color:#2B1608;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 3px 9px rgba(181,129,10,0.26);flex:none;",
+      newProduct: this.newProduct,
+
+      editingCategory, editingProduct,
+      modeChipStyle: "display:inline-flex;align-items:center;height:25px;padding:0 11px;border-radius:999px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;" + (editingProduct
+        ? "background:rgba(42,111,219,0.0);background:rgba(106,142,63,0.16);color:#4A6B1E;"
+        : "background:rgba(232,168,19,0.18);color:#A06F08;"),
+      modeLabel, origName, hasOrig,
+
+      catDraft: s.catDraft,
+      catFieldStyle: this.fieldBox(af === "catName", true),
+      focusCatName: this.focusField("catName"),
+      dupeCat,
+      canDeleteCat: editingCategory && !!s.editCatId,
+
+      pName: s.prod.name,
+      pPriceDisp: s.prod.price === "" ? "0.00" : s.prod.price,
+      pCostDisp: s.prod.cost === "" ? "0.00" : s.prod.cost,
+      pStockDisp: s.prod.stock === "" ? "0" : s.prod.stock,
+      nameFieldStyle: this.fieldBox(af === "name", false),
+      priceFieldStyle: this.fieldBox(af === "price", false),
+      costFieldStyle: this.fieldBox(af === "cost", false),
+      stockFieldStyle: this.fieldBox(af === "stock", false),
+      focusName: this.focusField("name"),
+      focusPrice: this.focusField("price"),
+      focusCost: this.focusField("cost"),
+      focusStock: this.focusField("stock"),
+      canDeleteProd: editingProduct && !!s.selProdId,
+
+      primaryLabel,
+      primaryStyle: canSave
+        ? "height:52px;width:100%;border:none;border-radius:14px;font-size:15.5px;font-weight:800;cursor:pointer;color:#2B1608;font-family:inherit;background:linear-gradient(160deg,#F5C944,#E8A813 55%,#B5810A);box-shadow:0 6px 16px rgba(181,129,10,0.3);transition:all 140ms;"
+        : "height:52px;width:100%;border:none;border-radius:14px;font-size:15.5px;font-weight:800;color:#B0A180;background:#E8DCBE;cursor:not-allowed;font-family:inherit;",
+      deleteLabel: s.confirmDelete ? "¿Confirmar eliminación?" : (editingProduct ? "Eliminar producto" : "Eliminar categoría"),
+      deleteStyle: "height:46px;width:100%;display:flex;align-items:center;justify-content:center;gap:7px;border-radius:13px;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;border:1.5px solid;" + (s.confirmDelete
+        ? "background:#B33A1F;border-color:#8A2812;color:#fff;"
+        : "background:#F4C9BA;border-color:rgba(179,58,31,0.3);color:#8A2812;"),
+      deleteCurrent: this.deleteCurrent,
+      confirm: this.confirm,
+
+      activeFieldLabel: afLabel,
+      keyRows: [
+        ["1","2","3","4","5","6","7","8","9","0"],
+        ["q","w","e","r","t","y","u","i","o","p"],
+        ["a","s","d","f","g","h","j","k","l","ñ"],
+        ["z","x","c","v","b","n","m","@","."],
+      ],
+      onKeyTap: this.onKeyTap,
+
+      toast: s.toast ? true : null,
+      toastStyle, toastIcon, toastMsg,
+      goInline: () => this.setState({ framing: "inline" }),
+      goSubview: () => this.setState({ framing: "subview" }),
+    };
+  }
+}
+</script>
+</body>
+</html>

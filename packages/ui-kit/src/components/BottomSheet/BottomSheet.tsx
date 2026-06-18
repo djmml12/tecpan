@@ -10,6 +10,12 @@ export interface BottomSheetProps {
   title?:             string;
   children:           ReactNode;
   height?:            BottomSheetHeight;
+  /** Constrain sheet width and center horizontally */
+  maxWidth?:          number | string;
+  /** Center the sheet both vertically and horizontally (modal style) */
+  centered?:          boolean;
+  /** Hide the close (×) button in the header */
+  hideClose?:         boolean;
   /** Tap backdrop to close. Default: true */
   closeOnBackdrop?:   boolean;
   /** Allow drag-down to close. Default: true */
@@ -22,6 +28,9 @@ export function BottomSheet({
   title,
   children,
   height          = "auto",
+  maxWidth,
+  centered        = false,
+  hideClose       = false,
   closeOnBackdrop = true,
   draggable       = true,
 }: BottomSheetProps) {
@@ -54,16 +63,16 @@ export function BottomSheet({
 
   /* ── Drag to dismiss ──────────────────── */
   const onDragStart = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!draggable) return;
+    if (!draggable || centered) return;
     startYRef.current = e.clientY;
     currentYRef.current = 0;
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
   const onDragMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!draggable || startYRef.current === null) return;
+    if (!draggable || centered || startYRef.current === null) return;
     const delta = e.clientY - startYRef.current;
-    if (delta <= 0) return; // don't allow dragging up
+    if (delta <= 0) return;
     currentYRef.current = delta;
     if (sheetRef.current) {
       sheetRef.current.style.transition = "none";
@@ -72,7 +81,7 @@ export function BottomSheet({
   };
 
   const onDragEnd = () => {
-    if (!draggable) return;
+    if (!draggable || centered) return;
     startYRef.current = null;
     if (currentYRef.current > 110) {
       onClose();
@@ -87,45 +96,53 @@ export function BottomSheet({
 
   if (!open) return null;
 
+  const sheetStyle: React.CSSProperties = {};
+  if (maxWidth) sheetStyle.maxWidth = typeof maxWidth === "number" ? `${maxWidth}px` : maxWidth;
+  if (maxWidth || centered) sheetStyle.marginInline = "auto";
+  if (centered) sheetStyle.borderRadius = "var(--radius-2xl)";
+
   return createPortal(
     <div
-      className="uk-bs-backdrop"
+      className={`uk-bs-backdrop${centered ? " uk-bs-backdrop--centered" : ""}`}
       onClick={closeOnBackdrop ? onClose : undefined}
       role="dialog"
       aria-modal="true"
       aria-label={title}
     >
-      {/* Stop propagation so clicking inside the sheet doesn't close it */}
       <div
         ref={sheetRef}
-        className={`uk-bs uk-bs--${height}`}
+        className={`uk-bs uk-bs--${height}${centered ? " uk-bs--centered" : ""}`}
         onClick={(e) => e.stopPropagation()}
+        style={Object.keys(sheetStyle).length ? sheetStyle : undefined}
       >
-        {/* Drag handle area */}
-        <div
-          className="uk-bs-handle-area"
-          onPointerDown={onDragStart}
-          onPointerMove={onDragMove}
-          onPointerUp={onDragEnd}
-          onPointerCancel={onDragEnd}
-        >
-          <div className="uk-bs-handle" />
-        </div>
+        {!centered && (
+          <div
+            className="uk-bs-handle-area"
+            onPointerDown={onDragStart}
+            onPointerMove={onDragMove}
+            onPointerUp={onDragEnd}
+            onPointerCancel={onDragEnd}
+          >
+            <div className="uk-bs-handle" />
+          </div>
+        )}
 
         {title && (
           <div className="uk-bs-header">
             <span className="uk-bs-title">{title}</span>
-            <button
-              className="uk-bs-close"
-              onClick={onClose}
-              aria-label="Cerrar"
-              type="button"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+            {!hideClose && (
+              <button
+                className="uk-bs-close"
+                onClick={onClose}
+                aria-label="Cerrar"
+                type="button"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
           </div>
         )}
 

@@ -226,12 +226,16 @@ body {
 
 /* ─── Scrollbars ──────────────────────────────────────────────── */
 .tecpan ::-webkit-scrollbar { width: 8px; height: 8px; }
-.tecpan ::-webkit-scrollbar-track { background: transparent; }
-.tecpan ::-webkit-scrollbar-thumb {
+.tecpan ::-webkit-scrollbar-track {
   background: var(--bg-deeper);
   border-radius: 999px;
+  margin: 4px 0;
 }
-.tecpan ::-webkit-scrollbar-thumb:hover { background: var(--fg-4); }
+.tecpan ::-webkit-scrollbar-thumb {
+  background: var(--fg-4);
+  border-radius: 999px;
+}
+.tecpan ::-webkit-scrollbar-thumb:hover { background: var(--fg-3); }
 
 /* ─── Utility ─────────────────────────────────────────────────── */
 .row { display: flex; align-items: center; gap: 10px; }

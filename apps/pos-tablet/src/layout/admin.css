@@ -1511,6 +1511,55 @@
   .al-nav-btn--active .al-nav-icon { color: var(--primary); }
 }
 
+/* ── Modo oscuro ────────────────────────────────────────────── */
+
+.tecpan-dark .al-layout {
+  --primary:        #F5B514;
+  --primary-dark:   #C48F0C;
+  --primary-bg:     rgba(245, 181, 20, 0.18);
+  --canvas:         #1F1810;
+  --surface:        #261D13;
+  --surface-raised: #2D2218;
+  --border:         rgba(0, 0, 0, 0.45);
+  --text-1:         #F4ECD8;
+  --text-2:         #C7B89A;
+  --text-3:         #8E7E63;
+  --success:        #9CB874;
+  --success-bg:     rgba(156, 184, 116, 0.18);
+  --warning:        #E89640;
+  --danger:         #D9583A;
+  --sidebar-bg:     linear-gradient(180deg, #110B06 0%, #1A0F08 100%);
+}
+
+.tecpan-dark .inv-stock-badge--ok   { background: rgba(156, 184, 116, 0.18); color: #9CB874; }
+.tecpan-dark .inv-stock-badge--low  { background: rgba(232, 150, 64, 0.18);  color: #E89640; }
+.tecpan-dark .inv-stock-badge--crit { background: rgba(217, 88, 58, 0.18);   color: #D9583A; }
+.tecpan-dark .inv-stock-badge--zero { background: rgba(0, 0, 0, 0.3);        color: #8E7E63; }
+
+.tecpan-dark .inv-threshold-bar {
+  background: rgba(245, 181, 20, 0.08);
+  border-bottom-color: rgba(0, 0, 0, 0.3);
+}
+
+.tecpan-dark .staff-status--active   { background: rgba(156, 184, 116, 0.18); color: #9CB874; }
+.tecpan-dark .staff-status--inactive { background: rgba(217, 88, 58, 0.18);   color: #D9583A; }
+
+.tecpan-dark .dash-kpi-card--profit {
+  background: #2A1C08;
+}
+.tecpan-dark .dash-kpi-card--danger {
+  background: #2A0F08;
+}
+
+.tecpan-dark .dash-date-input {
+  background: var(--surface);
+  color-scheme: dark;
+}
+
+.tecpan-dark .dash-format-select {
+  background: var(--surface);
+}
+
 /* Surface Go Gen1 profile (3:2, effective viewport ~1200x800 at 150% DPI) */
 @media (min-aspect-ratio: 1.45/1) and (max-aspect-ratio: 1.75/1) and (max-width: 1850px) {
   .al-layout {
