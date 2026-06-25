@@ -1,9 +1,15 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const certPath = path.resolve(__dirname, "../backend/cert.pem");
+const keyPath  = path.resolve(__dirname, "../backend/key.pem");
+const hasCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
+const httpsOpts = hasCerts ? { cert: fs.readFileSync(certPath), key: fs.readFileSync(keyPath) } : undefined;
 
 export default defineConfig({
   base: process.env.BASE_PATH ?? "./",
@@ -23,10 +29,12 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 5174,
+    https: httpsOpts,
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:3000",
+        target: hasCerts ? "https://127.0.0.1:3000" : "http://127.0.0.1:3000",
         changeOrigin: true,
+        secure: false,
       },
     },
   },
