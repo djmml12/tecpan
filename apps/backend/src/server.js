@@ -1,15 +1,8 @@
 import "dotenv/config";
-import https from "https";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 import app from "./app.js";
 import { initDB } from "./config/db.init.js";
 import { closeDatabase, optimizeDatabase } from "./config/db.js";
 import logger from "./utils/logger.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname  = path.dirname(__filename);
 
 if (!process.env.JWT_SECRET) {
   console.error("❌ JWT_SECRET no está configurado en .env — el servidor no puede arrancar de forma segura.");
@@ -20,10 +13,6 @@ const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || "0.0.0.0";
 let shuttingDown = false;
 let stopOutboxWorker = () => {};
-
-const CERT_PATH = path.resolve(__dirname, "../cert.pem");
-const KEY_PATH  = path.resolve(__dirname, "../key.pem");
-const useHttps  = fs.existsSync(CERT_PATH) && fs.existsSync(KEY_PATH);
 
 async function startOutboxWorkerAfterListen() {
   try {
@@ -41,24 +30,13 @@ async function startServer() {
 
     await initDB();
 
-    const createServer = useHttps
-      ? () => https.createServer({ key: fs.readFileSync(KEY_PATH), cert: fs.readFileSync(CERT_PATH) }, app)
-      : () => app;
-
     const server = await new Promise((resolve, reject) => {
-      const s = useHttps
-        ? createServer().listen(PORT, HOST, () => {
-            console.log("🔥 SERVER CORRECTO EJECUTÁNDOSE 🔥");
-            console.log(`🔒 Backend POS corriendo en HTTPS ${HOST}:${PORT}`);
-            console.log(`🌐 https://localhost:${PORT}`);
-            resolve(s);
-          })
-        : app.listen(PORT, HOST, () => {
-            console.log("🔥 SERVER CORRECTO EJECUTÁNDOSE 🔥");
-            console.log(`🔥 Backend POS corriendo en ${HOST}:${PORT}`);
-            console.log(`🌐 http://localhost:${PORT}`);
-            resolve(s);
-          });
+      const s = app.listen(PORT, HOST, () => {
+        console.log("🔥 SERVER CORRECTO EJECUTÁNDOSE 🔥");
+        console.log(`🔥 Backend POS corriendo en ${HOST}:${PORT}`);
+        console.log(`🌐 http://localhost:${PORT}`);
+        resolve(s);
+      });
       s.on("error", (err) => {
         if (err.code === "EADDRINUSE") {
           console.error(`❌ El puerto ${PORT} ya está en uso. Cierra otras instancias del sistema y vuelve a abrir.`);
