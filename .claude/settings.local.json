@@ -138,7 +138,8 @@
       "Bash(node -v)",
       "Bash(npm -v)",
       "Bash(chmod +x \"/home/djmm/Documentos/tecpan final/tecpancito/install.sh\" \"/home/djmm/Documentos/tecpan final/tecpancito/start.sh\" \"/home/djmm/Documentos/tecpan final/tecpancito/scripts/rpi/setup-printer-usb.sh\")",
-      "Bash(find \"C:/Users/DJMER/Desktop/tecpancito\" -type f | head -50)"
+      "Bash(find \"C:/Users/DJMER/Desktop/tecpancito\" -type f | head -50)",
+      "PowerShell(Get-ChildItem \"R:\\\\Descargas\\\\Nueva carpeta\\\\plasma-mobile-iso\" -Recurse | Where-Object { -not $_.PSIsContainer } | Select-Object @{N='Ruta';E={$_.FullName.Replace\\('R:\\\\Descargas\\\\Nueva carpeta\\\\plasma-mobile-iso\\\\', ''\\)}} | Sort-Object Ruta | Format-Table -AutoSize)"
     ]
   }
 }
