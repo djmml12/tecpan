@@ -1,68 +1,53 @@
-import { useCallback, useMemo, useState } from "react";
-import { Button, Spinner, useToast } from "@pos/ui-kit";
+import { useState, useMemo, useCallback, useRef } from "react";
+import { Button, useToast } from "@pos/ui-kit";
 import { apiRequest } from "@pos/api-client";
 import { fmt } from "@pos/pos-core";
 import type { CartItem } from "@pos/types";
 import "./split-bill-sheet.css";
 
-interface SeatItem {
+/* ── Helpers ────────────────────────────────────────────────── */
+
+const money = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+const uuid  = () => crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+/* ── Types ──────────────────────────────────────────────────── */
+
+interface SplitItem {
   productId: number;
   name:      string;
   price:     number;
   quantity:  number;
+  notes?:    string;
 }
-
-interface Seat {
-  id:     number;
-  label:  string;
-  items:  SeatItem[];
-  paid:   boolean;
-  saleId?: number;
-}
-
-type Mode = "equal" | "items";
 
 interface Props {
-  open:           boolean;
-  onClose:        () => void;
-  cart:           CartItem[];
-  cartTotal:      number;
-  orderRef:       string;
-  currentOrderId: number | null;
-  tipPercentage:  number;
-  /** Se llama cuando TODOS los comensales han pagado. */
-  onAllPaid:      (lastSaleId: number | null) => void;
+  open:          boolean;
+  onClose:       () => void;
+  cart:          CartItem[];
+  cartTotal:     number;
+  tipPercentage?: number;
+  onAllPaid:     (lastSaleId: number | null) => void;
 }
 
-function makeSeat(id: number): Seat {
-  return { id, label: `Comensal ${id}`, items: [], paid: false };
-}
+/* ── Icons ──────────────────────────────────────────────────── */
 
-/* ── Icons ───────────────────────────────────────────────── */
-function PlusIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
-}
-function MinusIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
-}
-function CheckIcon() {
+function ChevronRightIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+function ChevronLeftIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 18 9 12 15 6" />
     </svg>
   );
 }
 function PrinterIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="6 9 6 2 18 2 18 9" />
       <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
       <rect x="6" y="14" width="12" height="8" />
@@ -70,400 +55,319 @@ function PrinterIcon() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   ITEM ROWS
+═══════════════════════════════════════════════════════════════ */
+
+function PendingRow({ item, onMove }: { item: SplitItem; onMove: () => void }) {
+  return (
+    <div className="sb-row">
+      <span className="sb-row-qty">{item.quantity}</span>
+      <div className="sb-row-info">
+        <span className="sb-row-name">{item.name}</span>
+        <span className="sb-row-price">{fmt(item.price)} × {item.quantity} = {fmt(money(item.price * item.quantity))}</span>
+        {item.notes && <span className="sb-row-notes">📝 {item.notes}</span>}
+      </div>
+      <button className="sb-row-action sb-row-action--add" onClick={onMove} aria-label={`Agregar ${item.name}`}>
+        <ChevronRightIcon />
+      </button>
+    </div>
+  );
+}
+
+function SubRow({ item, onReturn }: { item: SplitItem; onReturn: () => void }) {
+  return (
+    <div className="sb-row sb-row--sub">
+      <span className="sb-row-qty sb-row-qty--sub">{item.quantity}</span>
+      <div className="sb-row-info">
+        <span className="sb-row-name">{item.name}</span>
+        <span className="sb-row-price">{fmt(item.price)} × {item.quantity} = {fmt(money(item.price * item.quantity))}</span>
+        {item.notes && <span className="sb-row-notes">📝 {item.notes}</span>}
+      </div>
+      <button className="sb-row-action sb-row-action--remove" onClick={onReturn} aria-label={`Devolver ${item.name}`}>
+        <ChevronLeftIcon />
+      </button>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+═══════════════════════════════════════════════════════════════ */
 
 export default function SplitBillSheet({
-  open, onClose, cart, cartTotal, orderRef, currentOrderId, tipPercentage, onAllPaid,
+  open, onClose, cart, cartTotal, tipPercentage = 0, onAllPaid,
 }: Props) {
   const { show } = useToast();
 
-  const [mode, setMode]             = useState<Mode>("equal");
-  const [numPeople, setNumPeople]   = useState(2);
-  const [seats, setSeats]           = useState<Seat[]>([makeSeat(1), makeSeat(2)]);
+  const [paidMap, setPaidMap]       = useState<Record<number, number>>({});
+  const [rightItems, setRightItems] = useState<SplitItem[]>([]);
+  const [subCount, setSubCount]     = useState(0);
+  const [loading, setLoading]       = useState(false);
   const [includeTip, setIncludeTip] = useState(true);
-  const [loadingId, setLoadingId]   = useState<number | null>(null);
-  const [allLoading, setAllLoading] = useState(false);
+  const requestIdRef = useRef<string | null>(null);
 
-  const tipActive = includeTip && tipPercentage > 0;
-  const withTip = (base: number) => (tipActive ? base * (1 + tipPercentage / 100) : base);
+  /* ── memos ─────────────────────────────────────────────────── */
 
-  /* ── pool sin asignar (modo ítems) ──────────────────────── */
-  const assignedMap = useMemo(() => {
-    const map: Record<number, number> = {};
-    for (const seat of seats) {
-      for (const si of seat.items) map[si.productId] = (map[si.productId] ?? 0) + si.quantity;
-    }
-    return map;
-  }, [seats]);
+  const rightMap = useMemo(() => {
+    const m: Record<number, number> = {};
+    for (const i of rightItems) m[i.productId] = (m[i.productId] ?? 0) + i.quantity;
+    return m;
+  }, [rightItems]);
 
-  const unassigned: SeatItem[] = useMemo(() =>
+  const pendingItems = useMemo<SplitItem[]>(() =>
     cart.flatMap(item => {
-      const remaining = item.quantity - (assignedMap[item.productId] ?? 0);
-      return remaining > 0
-        ? [{ productId: item.productId, name: item.name, price: item.price, quantity: remaining }]
-        : [];
+      const paid      = paidMap[item.productId] ?? 0;
+      const inRight   = rightMap[item.productId] ?? 0;
+      const remaining = item.quantity - paid - inRight;
+      return remaining > 0 ? [{ ...item, quantity: remaining }] : [];
     }),
-    [cart, assignedMap],
+    [cart, paidMap, rightMap],
   );
 
-  const totalUnassigned = useMemo(
-    () => unassigned.reduce((s, i) => s + i.price * i.quantity, 0),
-    [unassigned],
+  const totalPendingQty = useMemo(
+    () => pendingItems.reduce((s, i) => s + i.quantity, 0) + rightItems.reduce((s, i) => s + i.quantity, 0),
+    [pendingItems, rightItems],
   );
 
-  /* Cantidad total de unidades en el carrito (para detectar ítems sin cobrar). */
-  const cartQty = useMemo(
-    () => cart.reduce((s, i) => s + i.quantity, 0),
-    [cart],
-  );
-
-  /* ── helpers comensales ─────────────────────────────────── */
-  const setSeatCount = (n: number) => {
-    const clamped = Math.max(2, Math.min(20, n));
-    setNumPeople(clamped);
-    setSeats(prev => {
-      if (clamped > prev.length) {
-        const extra = Array.from({ length: clamped - prev.length }, (_, i) => makeSeat(prev.length + i + 1));
-        return [...prev, ...extra];
-      }
-      return prev.slice(0, clamped);
-    });
-  };
-  const addSeat = () => setSeatCount(seats.length + 1);
-  const removeSeat = () => setSeatCount(seats.length - 1);
-
-  const assignItemToSeat = (seatId: number, item: SeatItem, qty = 1) => {
-    setSeats(prev => prev.map(s => {
-      if (s.id !== seatId) return s;
-      const existing = s.items.find(i => i.productId === item.productId);
-      if (existing) {
-        return { ...s, items: s.items.map(i => i.productId === item.productId ? { ...i, quantity: i.quantity + qty } : i) };
-      }
-      return { ...s, items: [...s.items, { ...item, quantity: qty }] };
-    }));
-  };
-
-  const removeItemFromSeat = (seatId: number, productId: number, qty = 1) => {
-    setSeats(prev => prev.map(s => {
-      if (s.id !== seatId) return s;
-      const updated = s.items
-        .map(i => i.productId === productId ? { ...i, quantity: i.quantity - qty } : i)
-        .filter(i => i.quantity > 0);
-      return { ...s, items: updated };
-    }));
-  };
-
-  const distributeAllToSeat = (seatId: number) => {
-    if (unassigned.length === 0) return;
-    unassigned.forEach(item => assignItemToSeat(seatId, item, item.quantity));
-  };
+  /* ── reset ─────────────────────────────────────────────────── */
 
   const resetState = useCallback(() => {
-    setMode("equal");
-    setNumPeople(2);
-    setSeats([makeSeat(1), makeSeat(2)]);
+    setPaidMap({});
+    setRightItems([]);
+    setSubCount(0);
+    setLoading(false);
     setIncludeTip(true);
-    setLoadingId(null);
-    setAllLoading(false);
+    requestIdRef.current = null;
   }, []);
 
-  const closeAndReset = () => { resetState(); onClose(); };
+  /* ── mover ítems ───────────────────────────────────────────── */
 
-  /* ── construcción de la venta ───────────────────────────── */
-  const buildSaleBody = (items: SeatItem[], seatLabel?: string) => ({
-    items: items.map(i => ({ product_id: i.productId, quantity: i.quantity, price: i.price })),
-    ...(includeTip ? {} : { tip_amount: 0, tip_percentage: 0 }),
-    reference: ["SUB CUENTA", seatLabel, orderRef || undefined].filter(Boolean).join(" · ") || undefined,
-  });
+  const moveToRight = (item: SplitItem) => {
+    setRightItems(prev => {
+      const ex = prev.find(i => i.productId === item.productId);
+      if (ex) return prev.map(i => i.productId === item.productId ? { ...i, quantity: i.quantity + 1 } : i);
+      return [...prev, { ...item, quantity: 1 }];
+    });
+  };
 
-  /* Cierre del split por ítems: las sub-cuentas son ventas independientes,
-     así que la orden abierta original (si existía) quedaría colgada → la
-     cancelamos para no dejar una orden 'open' fantasma en la base. */
-  const finalizeItemsSplit = async (lastSaleId: number | null) => {
-    if (currentOrderId != null) {
-      try {
-        await apiRequest(`/sales/${currentOrderId}/cancel`, { method: "POST" });
-      } catch {
-        /* la orden quizá ya no estaba abierta; no es bloqueante */
+  const moveToLeft = (item: SplitItem) => {
+    setRightItems(prev =>
+      prev.map(i => i.productId === item.productId ? { ...i, quantity: i.quantity - 1 } : i)
+          .filter(i => i.quantity > 0),
+    );
+  };
+
+  const moveAllToRight = () => {
+    setRightItems(prev => {
+      const next = [...prev];
+      for (const item of pendingItems) {
+        const ex = next.find(i => i.productId === item.productId);
+        if (ex) ex.quantity += item.quantity;
+        else next.push({ ...item });
       }
-    }
-    onAllPaid(lastSaleId);
-    resetState();
+      return next;
+    });
   };
 
-  const printReceipt = async (saleId: number, label: string) => {
-    try {
-      await apiRequest("/print/receipt", {
-        method: "POST",
-        body: JSON.stringify({ sale_id: saleId }),
-        timeoutMs: 10_000,
-      });
-      show(`Recibo de ${label} enviado a la impresora`, { type: "success" });
-    } catch {
-      show("Impresora no disponible — revisa configuración", { type: "error" });
-    }
-  };
+  /* ── cobrar sub-cuenta ─────────────────────────────────────── */
 
-  /** Cobra un comensal individual (modo ítems). */
-  const paySeat = async (seat: Seat) => {
-    if (seat.items.length === 0) { show("Este comensal no tiene ítems asignados", { type: "warning" }); return; }
-    setLoadingId(seat.id);
+  const paySubAccount = async () => {
+    if (rightItems.length === 0) return;
+    if (!requestIdRef.current) requestIdRef.current = uuid();
+    setLoading(true);
+    const label = `SUB CUENTA ${subCount + 1}`;
     try {
-      const seatBase = seat.items.reduce((s, i) => s + i.price * i.quantity, 0);
       const result = await apiRequest("/sales", {
         method: "POST",
-        body: JSON.stringify(buildSaleBody(seat.items, seat.label)), // cada split = venta independiente
+        body: JSON.stringify({
+          items: rightItems.map(i => ({ product_id: i.productId, quantity: i.quantity, notes: i.notes || null })),
+          ...(includeTip ? {} : { tip_amount: 0, tip_percentage: 0 }),
+          reference: label,
+          client_request_id: requestIdRef.current,
+        }),
       }) as { id?: number };
 
-      show(`${seat.label} cobrado — ${fmt(withTip(seatBase))}`, { type: "success" });
-      if (result.id) await printReceipt(result.id, seat.label);
+      const subTotal = money(rightItems.reduce((s, i) => s + money(i.price * i.quantity), 0));
+      show(`${label} cobrada — ${fmt(subTotal)}`, { type: "success" });
 
-      setSeats(prev => {
-        const updated = prev.map(s => s.id === seat.id ? { ...s, paid: true, saleId: result.id } : s);
-        const allPaid = updated.every(s => s.paid);
-        const assignedQty = updated.reduce((sum, s) => sum + s.items.reduce((a, i) => a + i.quantity, 0), 0);
-        if (allPaid && assignedQty >= cartQty) {
-          setTimeout(() => { void finalizeItemsSplit(result.id ?? null); }, 400);
-        } else if (allPaid) {
-          show("Quedan ítems sin asignar. Agregá un comensal para cobrarlos.", { type: "warning" });
+      if (result.id) {
+        try {
+          await apiRequest("/print/receipt", {
+            method: "POST",
+            body: JSON.stringify({ sale_id: result.id }),
+            timeoutMs: 10_000,
+          });
+        } catch {
+          show("Impresora no disponible", { type: "error" });
         }
-        return updated;
+      }
+
+      const snapshot = [...rightItems];
+      setPaidMap(prev => {
+        const next = { ...prev };
+        for (const i of snapshot) next[i.productId] = (next[i.productId] ?? 0) + i.quantity;
+        return next;
       });
+      setRightItems([]);
+      setSubCount(c => c + 1);
+      requestIdRef.current = null;
+
+      const stillPending = cart.some(item => {
+        const nowPaid = (paidMap[item.productId] ?? 0) + (snapshot.find(s => s.productId === item.productId)?.quantity ?? 0);
+        return nowPaid < item.quantity;
+      });
+      if (!stillPending) {
+        setTimeout(() => { onAllPaid(result.id ?? null); resetState(); }, 350);
+      }
     } catch (err: unknown) {
       show(err instanceof Error ? err.message : "Error al cobrar", { type: "error" });
     } finally {
-      setLoadingId(null);
+      setLoading(false);
     }
   };
-
-  /** Cobra todo junto (modo igual). */
-  const payAll = async () => {
-    setAllLoading(true);
-    try {
-      const label = `Dividida entre ${numPeople}`;
-      const items: SeatItem[] = cart.map(i => ({ productId: i.productId, name: i.name, price: i.price, quantity: i.quantity }));
-      const result = await apiRequest("/sales", {
-        method: "POST",
-        body: JSON.stringify({ ...buildSaleBody(items, label), order_id: currentOrderId ?? undefined }),
-      }) as { id?: number };
-
-      show(`Cuenta dividida cobrada — ${fmt(withTip(cartTotal))}`, { type: "success" });
-      if (result.id) await printReceipt(result.id, label);
-
-      onAllPaid(result.id ?? null);
-      resetState();
-    } catch (err: unknown) {
-      show(err instanceof Error ? err.message : "Error al cobrar", { type: "error" });
-    } finally {
-      setAllLoading(false);
-    }
-  };
-
-  const perPersonAmount = withTip(cartTotal) / numPeople;
-  const allPaid = seats.every(s => s.paid);
 
   if (!open) return null;
 
+  const rightTotal      = money(rightItems.reduce((s, i) => s + money(i.price * i.quantity), 0));
+  const rightTipAmt     = includeTip && tipPercentage > 0 ? money(rightTotal * tipPercentage / 100) : 0;
+  const rightGrandTotal = money(rightTotal + rightTipAmt);
+  const pendingTotal    = money(pendingItems.reduce((s, i) => s + money(i.price * i.quantity), 0));
+  const subLabel        = `Sub cuenta ${subCount + 1}`;
+  const allDone         = totalPendingQty === 0;
+
   return (
-    <div className="sb-overlay">
-      {/* ── Header ── */}
+    <div className="sb-sheet">
+
+      {/* ── Header ──────────────────────────────────────── */}
       <div className="sb-header">
-        <div className="sb-header-info">
-          <span className="sb-header-title">Dividir cuenta</span>
-          <span className="sb-header-sub tabular">{fmt(cartTotal)} · {cart.length} ítems</span>
+        <div className="sb-header-top">
+          <div>
+            <div className="sb-header-title">Dividir cuenta</div>
+            <div className="sb-header-sub">
+              {fmt(cartTotal)}
+              {subCount > 0 && ` · ${subCount} cobrada${subCount !== 1 ? "s" : ""}`}
+            </div>
+          </div>
+          <div className="sb-header-actions">
+            {/* Toggle propina */}
+            <label className="sb-tip-toggle">
+              <span className="sb-tip-label">
+                Propina{tipPercentage > 0 ? ` (${tipPercentage}%)` : ""}
+              </span>
+              <div
+                className={`sb-switch${includeTip ? " sb-switch--on" : ""}`}
+                onClick={() => setIncludeTip(v => !v)}
+                role="switch"
+                aria-checked={includeTip}
+              >
+                <div className="sb-switch-thumb" />
+              </div>
+            </label>
+            <button
+              className="sb-close-btn"
+              onClick={() => { resetState(); onClose(); }}
+              aria-label="Cerrar"
+            >
+              ✕
+            </button>
+          </div>
         </div>
-        <button className="sb-close" onClick={closeAndReset} aria-label="Cerrar">✕</button>
       </div>
 
-      {/* ── Toggle propina ── */}
-      <button
-        className={`sb-tip-toggle${tipActive ? " sb-tip-toggle--on" : ""}`}
-        onClick={() => setIncludeTip(v => !v)}
-        disabled={tipPercentage === 0}
-        type="button"
-      >
-        <span className="sb-tip-label">
-          {tipPercentage === 0
-            ? "Sin propina configurada"
-            : `Propina ${tipPercentage}%`}
-        </span>
-        <span className={`sb-switch${tipActive ? " sb-switch--on" : ""}`}>
-          <span className="sb-switch-thumb" />
-        </span>
-      </button>
-
-      {/* ── Tabs ── */}
-      <div className="sb-tabs" role="tablist">
-        <button
-          role="tab"
-          aria-selected={mode === "equal"}
-          className={`sb-tab${mode === "equal" ? " sb-tab--active" : ""}`}
-          onClick={() => setMode("equal")}
-        >
-          División igual
-        </button>
-        <button
-          role="tab"
-          aria-selected={mode === "items"}
-          className={`sb-tab${mode === "items" ? " sb-tab--active" : ""}`}
-          onClick={() => setMode("items")}
-        >
-          Por ítems
-        </button>
-      </div>
-
-      {/* ── Body ── */}
+      {/* ── Body: lista única desplazable ───────────────── */}
       <div className="sb-body">
-        {/* ════ MODO IGUAL ════ */}
-        {mode === "equal" && (
-          <div className="sb-equal">
-            <div className="sb-people-row">
-              <span className="sb-people-label">Comensales</span>
-              <div className="sb-counter">
-                <button className="sb-counter-btn" onClick={removeSeat} disabled={numPeople <= 2}><MinusIcon /></button>
-                <span className="sb-counter-val">{numPeople}</span>
-                <button className="sb-counter-btn" onClick={addSeat} disabled={numPeople >= 20}><PlusIcon /></button>
-              </div>
-            </div>
 
-            <div className="sb-perperson">
-              <span className="sb-perperson-label">Cada uno paga</span>
-              <span className="sb-perperson-amount tabular">{fmt(perPersonAmount)}</span>
-            </div>
+        {/* ─ Sección: pendientes ─────────────────────── */}
+        <div className="sb-section-header">
+          <span className="sb-section-label">Artículos pendientes</span>
+          <span className="sb-section-total">{fmt(pendingTotal)}</span>
+        </div>
 
-            <div className="sb-totals">
-              <div className="sb-total-row">
-                <span>Subtotal</span>
-                <span className="tabular">{fmt(cartTotal)}</span>
-              </div>
-              {tipActive && (
-                <div className="sb-total-row">
-                  <span>Propina ({tipPercentage}%)</span>
-                  <span className="tabular">{fmt(withTip(cartTotal) - cartTotal)}</span>
-                </div>
-              )}
-              <div className="sb-total-row sb-total-row--main">
-                <span>Total</span>
-                <span className="tabular">{fmt(withTip(cartTotal))}</span>
-              </div>
-            </div>
+        {pendingItems.length === 0 ? (
+          <div className="sb-empty">
+            {allDone ? "Todos los artículos han sido cobrados" : "Todos están en la sub-cuenta activa"}
+          </div>
+        ) : (
+          <>
+            {pendingItems.map(item => (
+              <PendingRow key={item.productId} item={item} onMove={() => moveToRight(item)} />
+            ))}
+            <button className="sb-move-all-btn" onClick={moveAllToRight}>
+              Mover todo a sub-cuenta →
+            </button>
+          </>
+        )}
 
-            <Button variant="primary" size="xl" fullWidth loading={allLoading} onClick={() => void payAll()}>
-              <span className="sb-btn-inner"><PrinterIcon /> Cobrar e imprimir — {fmt(withTip(cartTotal))}</span>
-            </Button>
+        {/* ─ Sección: sub-cuenta activa ─────────────── */}
+        <div className="sb-section-header sb-section-header--sub">
+          <span className="sb-section-label">{subLabel}</span>
+          <span className="sb-section-total">{fmt(rightTotal)}</span>
+        </div>
+
+        {rightItems.length === 0 ? (
+          <div className="sb-empty">
+            Toca los artículos de arriba para agregarlos
+          </div>
+        ) : (
+          rightItems.map(item => (
+            <SubRow key={item.productId} item={item} onReturn={() => moveToLeft(item)} />
+          ))
+        )}
+
+        {/* spacer para que el footer fijo no tape el último ítem */}
+        <div className="sb-body-spacer" />
+      </div>
+
+      {/* ── Footer sticky ───────────────────────────────── */}
+      <div className="sb-footer">
+        {/* Desglose */}
+        {rightItems.length > 0 && (
+          <div className="sb-breakdown">
+            <div className="sb-breakdown-row">
+              <span>Subtotal</span>
+              <span className="tabular">{fmt(rightTotal)}</span>
+            </div>
+            {includeTip && tipPercentage > 0 && (
+              <div className="sb-breakdown-row sb-breakdown-row--tip">
+                <span>Propina ({tipPercentage}%)</span>
+                <span className="tabular">+ {fmt(rightTipAmt)}</span>
+              </div>
+            )}
+            <div className="sb-breakdown-row sb-breakdown-row--total">
+              <span>Total</span>
+              <span className="tabular">{fmt(rightGrandTotal)}</span>
+            </div>
           </div>
         )}
 
-        {/* ════ MODO POR ÍTEMS ════ */}
-        {mode === "items" && (
-          <div className="sb-items">
-            {unassigned.length > 0 && (
-              <div className="sb-pool">
-                <div className="sb-pool-head">
-                  <span className="sb-pool-title">Sin asignar</span>
-                  <span className="sb-pool-total tabular">{fmt(totalUnassigned)}</span>
-                </div>
-                <div className="sb-pool-list">
-                  {unassigned.map(item => (
-                    <div key={item.productId} className="sb-pool-item">
-                      <div className="sb-pool-item-info">
-                        <span className="sb-pool-item-name">{item.name}</span>
-                        <span className="sb-pool-item-price tabular">{fmt(item.price)} × {item.quantity}</span>
-                      </div>
-                      <div className="sb-assign-btns">
-                        {seats.filter(s => !s.paid).map(seat => (
-                          <button
-                            key={seat.id}
-                            className="sb-assign-btn"
-                            onClick={() => assignItemToSeat(seat.id, item, 1)}
-                            title={`Asignar a ${seat.label}`}
-                          >
-                            C{seat.id}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        <Button
+          variant="primary"
+          size="xl"
+          fullWidth
+          disabled={rightItems.length === 0 || loading}
+          loading={loading}
+          onClick={() => void paySubAccount()}
+        >
+          <span className="sb-cobrar-label">
+            <PrinterIcon />
+            {rightItems.length === 0
+              ? "Cobrar sub-cuenta"
+              : `Cobrar ${subLabel} — ${fmt(rightGrandTotal)}`}
+          </span>
+        </Button>
+
+        {/* Resumen de estado */}
+        {(subCount > 0 || pendingItems.length > 0) && (
+          <div className="sb-status">
+            {subCount > 0 && (
+              <span className="sb-status--ok">✓ {subCount} cobrada{subCount !== 1 ? "s" : ""}</span>
             )}
-
-            <div className="sb-seats">
-              {seats.map(seat => {
-                const seatBase = seat.items.reduce((s, i) => s + i.price * i.quantity, 0);
-                return (
-                  <div key={seat.id} className={`sb-seat${seat.paid ? " sb-seat--paid" : ""}`}>
-                    <div className="sb-seat-head">
-                      <div className="sb-seat-name">
-                        <span className="sb-seat-avatar">{seat.id}</span>
-                        <span>{seat.label}</span>
-                      </div>
-                      {!seat.paid && unassigned.length > 0 && (
-                        <button className="sb-seat-all" onClick={() => distributeAllToSeat(seat.id)}>
-                          + Todo
-                        </button>
-                      )}
-                    </div>
-
-                    {seat.items.length === 0 ? (
-                      <div className="sb-seat-empty">Sin ítems asignados</div>
-                    ) : (
-                      <div className="sb-seat-items">
-                        {seat.items.map(item => (
-                          <div key={item.productId} className="sb-seat-item">
-                            <span className="sb-seat-item-name">{item.name}</span>
-                            <span className="sb-seat-item-qty tabular">× {item.quantity}</span>
-                            <span className="sb-seat-item-sub tabular">{fmt(item.price * item.quantity)}</span>
-                            {!seat.paid && (
-                              <button
-                                className="sb-seat-item-rm"
-                                onClick={() => removeItemFromSeat(seat.id, item.productId, 1)}
-                                aria-label="Quitar ítem"
-                              >
-                                ←
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="sb-seat-foot">
-                      <div className="sb-seat-foot-total">
-                        <span className="tabular">{fmt(withTip(seatBase))}</span>
-                        {tipActive && seatBase > 0 && (
-                          <span className="sb-seat-foot-tip">incl. propina</span>
-                        )}
-                      </div>
-                      {seat.paid ? (
-                        <span className="sb-seat-paid"><CheckIcon /> Cobrado</span>
-                      ) : (
-                        <button
-                          className="sb-seat-pay"
-                          disabled={seat.items.length === 0 || loadingId !== null}
-                          onClick={() => void paySeat(seat)}
-                        >
-                          {loadingId === seat.id
-                            ? <Spinner size="sm" />
-                            : <><PrinterIcon /> Cobrar</>}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {allPaid && unassigned.length > 0 && (
-              <p className="sb-warn">
-                Quedan ítems sin asignar ({fmt(totalUnassigned)}). Agregá un comensal para cobrarlos.
-              </p>
+            {pendingItems.length > 0 && (
+              <span>Pendiente: {fmt(pendingTotal)}</span>
             )}
-
-            {(!allPaid || unassigned.length > 0) && (
-              <button className="sb-add-seat" onClick={addSeat}>
-                <PlusIcon /> Agregar comensal
-              </button>
+            {allDone && (
+              <span className="sb-status--ok">✓ Cuenta liquidada</span>
             )}
           </div>
         )}

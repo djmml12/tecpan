@@ -26,6 +26,14 @@ if not exist "%ROOT%apps\backend\node_modules" (
     exit /b 1
 )
 
+if not exist "%ROOT%apps\pos-mobile\node_modules" (
+    echo  [ERROR] Faltan node_modules en apps\pos-mobile.
+    echo          Ejecuta "npm install" en la raiz del proyecto.
+    echo.
+    pause
+    exit /b 1
+)
+
 if not exist "%ROOT%apps\pos-tablet\node_modules" (
     echo  [ERROR] Faltan node_modules en apps\pos-tablet.
     echo          Ejecuta "npm install" en la raiz del proyecto.
@@ -57,10 +65,12 @@ if errorlevel 1 (
     echo.
 )
 
-echo  [1/2] Iniciando Backend  (http://localhost:3000)
-echo  [2/2] Iniciando Frontend (http://localhost:5173)
+echo  [1/3] Iniciando Backend    (http://localhost:3000)
+echo  [2/3] Iniciando POS Tablet (http://localhost:5173)
+echo  [3/3] Iniciando POS Mobile (http://localhost:5174)
 echo.
-echo  Presiona Ctrl+C para detener ambos procesos.
+echo  Cada frontend abre en su propia ventana.
+echo  Cierra las ventanas para detener los procesos.
 echo.
 
 :: Levantar backend en ventana separada
@@ -69,17 +79,29 @@ start "Tecpancito - Backend" /D "%ROOT%apps\backend" cmd /k "node --env-file=.en
 :: Breve pausa para que el backend arranque primero
 timeout /t 2 /nobreak >nul
 
-:: Levantar frontend
-cd /d "%ROOT%apps\pos-tablet"
-
+:: Levantar pos-tablet en ventana separada
 if exist "%ROOT%node_modules\.bin\vite.cmd" (
-    "%ROOT%node_modules\.bin\vite.cmd"
+    start "Tecpancito - POS Tablet" /D "%ROOT%apps\pos-tablet" cmd /k ""%ROOT%node_modules\.bin\vite.cmd""
 ) else if exist "%ROOT%apps\pos-tablet\node_modules\.bin\vite.cmd" (
-    "%ROOT%apps\pos-tablet\node_modules\.bin\vite.cmd"
+    start "Tecpancito - POS Tablet" /D "%ROOT%apps\pos-tablet" cmd /k ""%ROOT%apps\pos-tablet\node_modules\.bin\vite.cmd""
 ) else (
-    echo  [ERROR] No se encontro vite. Ejecuta "npm install" en la raiz.
+    echo  [ERROR] No se encontro vite para pos-tablet. Ejecuta "npm install" en la raiz.
     pause
     exit /b 1
 )
 
+:: Levantar pos-mobile en ventana separada
+if exist "%ROOT%node_modules\.bin\vite.cmd" (
+    start "Tecpancito - POS Mobile" /D "%ROOT%apps\pos-mobile" cmd /k ""%ROOT%node_modules\.bin\vite.cmd""
+) else if exist "%ROOT%apps\pos-mobile\node_modules\.bin\vite.cmd" (
+    start "Tecpancito - POS Mobile" /D "%ROOT%apps\pos-mobile" cmd /k ""%ROOT%apps\pos-mobile\node_modules\.bin\vite.cmd""
+) else (
+    echo  [ERROR] No se encontro vite para pos-mobile. Ejecuta "npm install" en la raiz.
+    pause
+    exit /b 1
+)
+
+echo.
+echo  Todo levantado. Esta ventana puede cerrarse.
+echo.
 pause

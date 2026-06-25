@@ -319,16 +319,18 @@ export default function MobileShell({ onLogout }: MobileShellProps) {
         onClose={() => setShowSplit(false)}
         cart={ticket.cart}
         cartTotal={ticket.cartTotal}
-        orderRef={ticket.orderRef}
-        currentOrderId={ticket.currentOrderId}
         tipPercentage={checkout.tipPercentage}
         onAllPaid={(saleId) => {
           const totalSnap = ticket.cartTotal;
+          const orderId   = ticket.currentOrderId;
           ticket.clearAfterPay();
           void refreshOrders();
           setShowSplit(false);
           setCompletedSaleId(saleId);
           setCompletedTotal(totalSnap);
+          if (orderId != null) {
+            void apiRequest(`/sales/${orderId}/cancel`, { method: "POST" }).catch(() => {});
+          }
         }}
       />
 
