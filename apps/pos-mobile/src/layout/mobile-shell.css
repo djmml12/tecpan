@@ -144,3 +144,91 @@
   max-width: 260px;
   line-height: 1.5;
 }
+
+/* ── Name sheet ──────────────────────────────────────────── */
+
+.ms-name-sheet {
+  padding: 0 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ms-quick-names {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.ms-quick-name-chip {
+  padding: 0 12px;
+  height: 48px;
+  border: 1px solid var(--primary-dark, #B5810A);
+  border-radius: var(--radius-lg, 12px);
+  background: linear-gradient(160deg, #F5C944, var(--primary, #E8A813) 55%, var(--primary-dark, #B5810A));
+  color: var(--accent-ink, #2B1608);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 100ms ease, background 100ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.ms-quick-name-chip:active {
+  background: linear-gradient(160deg, var(--primary, #E8A813), var(--primary-dark, #B5810A));
+  transform: scale(0.96);
+}
+
+.ms-name-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.ms-name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 16px;
+  background: var(--bg-elev, var(--bg-2, #1e1e1e));
+  border: 2px solid var(--border-strong, #333);
+  border-radius: var(--radius-md, 8px);
+  font-family: inherit;
+  font-size: 16px;
+  color: var(--fg-1, #fff);
+  box-sizing: border-box;
+}
+
+.ms-name-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.ms-name-input::placeholder {
+  color: var(--fg-4, #666);
+}
+
+.ms-save-quick-btn {
+  flex-shrink: 0;
+  padding: 0 14px;
+  border: 2px solid var(--border-strong, #333);
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-elev, var(--bg-2, #1e1e1e));
+  color: var(--fg-2, #aaa);
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 140ms;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ms-save-quick-btn:hover   { border-color: var(--accent); color: var(--accent); }
+.ms-save-quick-btn:active  { background: var(--accent); color: #fff; border-color: var(--accent); }
+.ms-save-quick-btn:disabled { opacity: 0.4; cursor: default; }

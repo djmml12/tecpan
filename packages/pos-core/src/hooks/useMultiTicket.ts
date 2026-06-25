@@ -80,7 +80,10 @@ export function useMultiTicket() {
   }, [patchActive]);
 
   const removeItem = useCallback((productId: number) => {
-    patchActive(s => ({ ...s, cart: s.cart.filter(i => i.productId !== productId) }));
+    patchActive(s => ({
+      ...s,
+      cart: s.cart.filter(i => i.productId !== productId),
+    }));
   }, [patchActive]);
 
   const setItemNotes = useCallback((productId: number, notes: string) => {
@@ -93,8 +96,8 @@ export function useMultiTicket() {
   const setOrderRef   = useCallback((v: string) => patchActive(s => ({ ...s, orderRef: v })),   [patchActive]);
   const setOrderNotes = useCallback((v: string) => patchActive(s => ({ ...s, orderNotes: v })), [patchActive]);
 
-  const createTicket = useCallback(() => {
-    setSlots(prev => [...prev, emptySlot()]);
+  const createTicket = useCallback((ref?: string) => {
+    setSlots(prev => [...prev, { ...emptySlot(), orderRef: ref ?? "" }]);
     setActiveIndex(slots.length);
   }, [slots.length]);
 
@@ -126,6 +129,25 @@ export function useMultiTicket() {
     }));
   }, [patchActive]);
 
+  /** Abre una orden en un slot nuevo, o cambia al slot existente si ya está cargada. */
+  const openOrder = useCallback((args: LoadOrderArgs) => {
+    const existingIdx = slots.findIndex(s => s.currentOrderId === args.orderId);
+    if (existingIdx !== -1) {
+      setActiveIndex(existingIdx);
+      return;
+    }
+    const newSlot: TicketSlot = {
+      ...emptySlot(),
+      cart:           args.items,
+      orderNotes:     args.notes,
+      orderRef:       args.reference,
+      currentOrderId: args.orderId,
+      monthlyNum:     args.monthlyNum,
+    };
+    setSlots(prev => [...prev, newSlot]);
+    setActiveIndex(slots.length);
+  }, [slots]);
+
   const applySavedOrder = useCallback((order: SavedOrder) => {
     patchActive(s => ({
       ...s,
@@ -138,6 +160,6 @@ export function useMultiTicket() {
   return {
     slots, activeIndex, cart, cartTotal, orderRef, orderNotes, currentOrderId, flashId,
     addToCart, increaseQty, decreaseQty, removeItem, setItemNotes, setOrderRef, setOrderNotes,
-    createTicket, switchTicket, closeTicket, resetTicket, clearAfterPay, loadOrder, applySavedOrder,
+    createTicket, switchTicket, closeTicket, resetTicket, clearAfterPay, loadOrder, openOrder, applySavedOrder,
   };
 }

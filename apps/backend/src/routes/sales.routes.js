@@ -21,6 +21,6 @@ router.get("/:id", authMiddleware, getSaleById);
 router.patch("/:id", authMiddleware, updateSale);
 router.post("/:id/pay", authMiddleware, paySale);
 router.post("/:id/pay-with-tip", authMiddleware, paySaleWithTip);
-router.post("/:id/cancel", authMiddleware, authorize("admin", "supervisor"), cancelSale);
+router.post("/:id/cancel", authMiddleware, authorize("admin", "supervisor", "cashier"), cancelSale);
 
 export default router;

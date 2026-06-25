@@ -89,6 +89,8 @@ export default function MobileShell({ onLogout }: MobileShellProps) {
   const [printerMode,     setPrinterMode]     = useState<"single" | "dual">("single");
   const printerModeFetched = useRef(false);
 
+  const [quickNames, setQuickNames] = useState<string[]>([]);
+
   const catalog  = useCatalog();
   const ticket   = useMultiTicket();
   const checkout = useCheckout();
@@ -111,6 +113,11 @@ export default function MobileShell({ onLogout }: MobileShellProps) {
         if (res?.mode === "dual") setPrinterMode("dual");
       })
       .catch(() => { /* modo single por defecto */ });
+    void (apiRequest("/settings/order-naming") as Promise<{ data?: { quickNames?: string[] } }>)
+      .then((res) => {
+        setQuickNames(Array.isArray(res?.data?.quickNames) ? res.data!.quickNames! : []);
+      })
+      .catch(() => {});
   }, []);
 
   /* Badge: número de tickets abiertos con al menos un ítem. */
@@ -150,11 +157,21 @@ export default function MobileShell({ onLogout }: MobileShellProps) {
     }
   }
 
+  /* ── Eliminar orden guardada ───────────── */
+  async function handleDeleteOrder(orderId: number): Promise<boolean> {
+    const ok = await orders.cancelOrder(orderId);
+    if (ok) {
+      const idx = ticket.slots.findIndex(s => s.currentOrderId === orderId);
+      if (idx !== -1) ticket.closeTicket(idx);
+    }
+    return ok;
+  }
+
   /* ── Cargar orden guardada ──────────────── */
   async function handleLoadOrder(order: SavedOrder): Promise<void> {
     const detail = await orders.loadOrderDetail(order.id);
     if (!detail) return;
-    ticket.loadOrder({
+    ticket.openOrder({
       items:      detail.items,
       notes:      detail.notes,
       orderId:    order.id,
@@ -192,6 +209,20 @@ export default function MobileShell({ onLogout }: MobileShellProps) {
     }
     setCompletedTotal(null);
     setCompletedSaleId(null);
+  }
+
+  /* ── Guardar nombre rápido ──────────────────────── */
+  async function handleSaveQuickName(name: string) {
+    const updated = [...quickNames, name];
+    setQuickNames(updated);
+    try {
+      await apiRequest("/settings/order-naming", {
+        method: "PUT",
+        body: JSON.stringify({ quickNames: updated, quickOrdersEnabled: true }),
+      });
+    } catch {
+      setQuickNames(prev => prev.filter(n => n !== name));
+    }
   }
 
   return (
@@ -235,7 +266,7 @@ export default function MobileShell({ onLogout }: MobileShellProps) {
             onSave={handleSave}
             onSplit={() => setShowSplit(true)}
             onLoadOrder={handleLoadOrder}
-            onDeleteOrder={orders.cancelOrder}
+            onDeleteOrder={handleDeleteOrder}
             deleting={orders.canceling}
             onReprintReceipt={printing.printReceipt}
             onRefreshOrders={refreshOrders}
@@ -246,7 +277,9 @@ export default function MobileShell({ onLogout }: MobileShellProps) {
             onPrintKitchen={handlePrintKitchen}
             slots={ticket.slots}
             activeIndex={ticket.activeIndex}
-            onCreateTicket={ticket.createTicket}
+            onCreateTicket={(name) => { ticket.createTicket(name); setActiveTab("ticket"); }}
+            quickNames={quickNames}
+            onSaveQuickName={(name) => void handleSaveQuickName(name)}
             onSwitchTicket={ticket.switchTicket}
             onCloseTicket={ticket.closeTicket}
           />
@@ -265,7 +298,7 @@ export default function MobileShell({ onLogout }: MobileShellProps) {
           aria-current={activeTab === "pos" ? "page" : undefined}
         >
           <GridIcon />
-          <span>Catálogo</span>
+          <span>Menú</span>
         </button>
 
         <button
@@ -279,7 +312,7 @@ export default function MobileShell({ onLogout }: MobileShellProps) {
               <span className="ms-badge">{ticketCount > 9 ? "9+" : ticketCount}</span>
             )}
           </span>
-          <span>Ticket</span>
+          <span>Órdenes</span>
         </button>
 
         {isAdmin && (

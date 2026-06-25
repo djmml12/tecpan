@@ -102,22 +102,21 @@
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  border: 1px dashed rgba(var(--m-fg-rgb), 0.18);
-  background: transparent;
-  color: rgba(var(--m-fg-rgb), 0.35);
-  font-size: 20px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-ink, #fff);
+  font-size: 22px;
   line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
   margin-left: 2px;
   margin-bottom: 2px;
-  transition: background 120ms, color 120ms, border-color 120ms;
+  transition: opacity 120ms;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
 }
 
 .tt-tab-new:active {
-  background: rgba(var(--m-fg-rgb), 0.08);
-  color: var(--m-fg);
-  border-color: rgba(var(--m-fg-rgb), 0.35);
+  opacity: 0.75;
 }
 
 /* ── Empty state ─────────────────────────── */
@@ -806,4 +805,121 @@
   background: rgba(var(--m-fg-rgb), 0.06);
   color: rgba(var(--m-fg-rgb), 0.25);
   cursor: not-allowed;
+}
+
+/* ── Nombres rápidos ────────────────────────────────── */
+
+.tt-name-sheet {
+  padding: 0 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tt-quick-names {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.tt-quick-name-chip {
+  padding: 0 12px;
+  height: 52px;
+  border: 1px solid var(--primary-dark, #B5810A);
+  border-radius: 12px;
+  background: linear-gradient(160deg, #F5C944, var(--primary, #E8A813) 55%, var(--primary-dark, #B5810A));
+  color: #2B1608;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 120ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.tt-quick-name-chip:active {
+  transform: scale(0.95);
+  background: linear-gradient(160deg, var(--primary, #E8A813), var(--primary-dark, #B5810A));
+}
+
+.tt-name-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.tt-name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 16px;
+  background: rgba(var(--m-fg-rgb), 0.06);
+  border: 2px solid rgba(var(--m-fg-rgb), 0.15);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 16px;
+  color: var(--m-fg, #fff);
+  box-sizing: border-box;
+}
+
+.tt-name-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.tt-name-input::placeholder {
+  color: rgba(var(--m-fg-rgb), 0.35);
+}
+
+.tt-save-quick-btn {
+  flex-shrink: 0;
+  width: 52px;
+  border: 2px solid rgba(var(--m-fg-rgb), 0.15);
+  border-radius: 10px;
+  background: rgba(var(--m-fg-rgb), 0.06);
+  color: rgba(var(--m-fg-rgb), 0.5);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 140ms;
+}
+
+.tt-save-quick-btn:active  { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tt-save-quick-btn:disabled { opacity: 0.35; cursor: default; }
+
+/* ── Botón nueva orden ──────────────────────────────── */
+
+.tt-new-order-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - 32px);
+  margin: 20px 16px 0;
+  height: 64px;
+  min-height: 64px;
+  flex-shrink: 0;
+  background: var(--accent);
+  color: var(--accent-ink, #fff);
+  border: none;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 120ms ease;
+}
+
+.tt-new-order-btn:active { opacity: 0.8; }
+
+.tt-new-order-btn--top {
+  margin-bottom: 8px;
 }
